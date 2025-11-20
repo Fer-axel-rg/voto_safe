@@ -1,108 +1,130 @@
-import {User} from 'lucide-react';
+import { User, AlertCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-// props 
+
+// Props
 type PanelDniProps = {
   onVolver: () => void;
-  onIngresar: () => void; 
+  onIngresar: () => void;
 }
 
-interface usuarioData {
+interface UsuarioData {
   DNI: string;
   [key: string]: any;
 }
 
+const PanelDni = ({ onVolver, onIngresar }: PanelDniProps) => {
+  const [dni, setDni] = useState("");
+  const [error, setError] = useState<string | null>(null); // Estado para mensajes de error visuales
 
-const PanelDni =  ({onVolver, onIngresar}: PanelDniProps) => {
-  // creamos el estado para guardar el valor del input :v
-  const [dni,setDni] = useState("");
-  // estados de error
- 
-  
-  
-  // un USEEFFECT , este se ejecutara cada que la variable cambie , para que? para verificar que tenga los 8 numeros 
-  // necesarios para pasar a la siguiente pagina y asi poder deshacernos del boton :v
+  // Efecto para validar automáticamente al llegar a 8 dígitos
   useEffect(() => {
-    if(dni.length ===8) {
+    if (dni.length === 8) {
       const usuariosGuardados = localStorage.getItem('usuariosData');
-      if(!usuariosGuardados) {
-        
-        return
+
+      if (!usuariosGuardados) {
+        setError("No hay base de datos de usuarios cargada.");
+        return;
       }
-      
+
       try {
-        const users: usuarioData[] = JSON.parse(usuariosGuardados)
+        const users: UsuarioData[] = JSON.parse(usuariosGuardados);
+        const usuarioEncontrado = users.find(user => user.DNI === dni);
 
-        const usuarioEncontrado = users.find(user => user.DNI ===dni);
-
-        if(usuarioEncontrado) {
-          localStorage.setItem('usuarioActual',JSON.stringify(usuarioEncontrado));
-          onIngresar();
+        if (usuarioEncontrado) {
+          localStorage.setItem('usuarioActual', JSON.stringify(usuarioEncontrado));
+          setError(null);
+          // Pequeño delay para que el usuario vea que se completó antes de cambiar
+          setTimeout(() => {
+            onIngresar();
+          }, 200);
         } else {
-          console.log("Error : usuario no encontrado")
-        } 
-       } catch (e) {
-        console.error("Error al procesar datos: ",e)
-       }
-
+          setError("DNI no encontrado en el padrón.");
+        }
+      } catch (e) {
+        console.error("Error al procesar datos: ", e);
+        setError("Error al leer datos del sistema.");
+      }
+    } else {
+      // Limpiamos el error si el usuario borra números
+      setError(null);
     }
-    else {
-      console.log('error')
-    }
+  }, [dni, onIngresar]);
 
-    },[dni,onIngresar]);
-    // ESTAS SON LAS VARIABLES EN LAS QUE SE ENFOCARA el useEffect , osea si cambian estas variables 
-    // se ejecuta este effect
-  
-
-  
-  
-
-  
-  // ahora que tenemos la funcion que ALMACENA necesitamos otra para manejar los cambios
   const handleDniChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // filtramos para que solo se puedan escribir numeros 
-    const valorNumerico = e.target.value.replace(/[^0-9]/g,'');
+    // Filtramos para solo números
+    const valorNumerico = e.target.value.replace(/[^0-9]/g, '');
     setDni(valorNumerico);
-  } 
-  return(
-    <>
+    if (error) setError(null); // Limpiar error al escribir
+  };
 
-      <div className='shadow-[0px_0px_5px_1px_rgba(0,8,69,1)] font-poppins font-medium bg-white w-[50%] rounded-3xl  h-[400px] mt-24 p-5 flex flex-col
-                       justify-start items-center '>
-        <div className='flex flex-col items-center justify-center w-[82px] h-[82px] text-center rounded-full mb-9 bg-blue-950'>
-          <User className='m-auto text-center w-14 h-14 text-blue-50'/>
-          
+  return (
+    <div className="flex items-center justify-center w-full animate-fadeIn">
+
+      {/* TARJETA RESPONSIVE:
+          - w-full: Ocupa todo el ancho en móvil.
+          - max-w-sm md:max-w-md: Limita el ancho en PC para que parezca tarjeta.
+          - bg-white rounded-3xl: Mantenemos tu estilo redondeado.
+      */}
+      <div className="bg-white w-full max-w-sm md:max-w-md rounded-[2rem] shadow-2xl p-8 flex flex-col items-center border border-blue-50">
+
+        {/* Icono Circular */}
+        <div className="flex items-center justify-center w-20 h-20 rounded-full mb-6 bg-blue-950 shadow-lg shadow-blue-900/30">
+          <User className="text-blue-50 w-10 h-10" />
         </div>
-        <h2 className='m-0 text-xl font-semibold text-black font-poppins'>INGRESE SU DNI</h2>
-        <div className='flex flex-col w-full h-20 bg-white'>
-          <input type="text" className='m-auto w-[90%] h-10 rounded-sm  border-2 border-b-black/55
-          focus:outline-none focus:border-b-blue-950 focus:border-2 focus:ring-blue-950  focus:ring-offset-2
-                        transition duration-250 ease-in-out'
-                        value={dni}
-                        onChange={handleDniChange}
-                        maxLength={8}
-                        inputMode='numeric'
-                        pattern='[0-9]*'
- />
+
+        <h2 className="text-xl md:text-2xl font-bold text-blue-950 font-poppins mb-8 text-center">
+          INGRESE SU DNI
+        </h2>
+
+        {/* Input Container */}
+        <div className="w-full relative mb-2">
+          <input
+            type="text"
+            className={`w-full h-14 text-center text-2xl tracking-[0.5em] font-bold text-gray-700 
+                        border-b-2 border-b-black/50 focus:outline-none transition-all duration-300
+                        placeholder:text-gray-300 placeholder:tracking-normal placeholder:text-lg
+                        ${error
+                ? 'border-red-500 text-red-600 animate-shake'
+                : 'border-gray-300 focus:border-blue-950'
+              }`}
+            value={dni}
+            onChange={handleDniChange}
+            maxLength={8}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="00000000"
+            autoFocus
+          />
+
+          {/* Mensaje de Error Flotante */}
+          {error && (
+            <div className="absolute left-0 right-0 -bottom-8 flex justify-center items-center gap-1 text-red-500 text-xs font-medium animate-fadeIn">
+              <AlertCircle size={14} />
+              <span>{error}</span>
+            </div>
+          )}
         </div>
-        
-        <div className='flex flex-col justify-between w-full h-32 gap-4 p-2 mt-10 bg-white'>
-          <div className='flex flex-col items-center justify-center w-[80%] h-10 p-2 m-auto text-center text-white transition-transform duration-200 bg-blue-950 rounded-3xl hover:scale-105'>
-            <span className='w-full m-1'>solo los 8 numeros del DNI</span>
+
+        {/* Sección Informativa y Botón Volver */}
+        <div className="flex flex-col items-center w-full gap-6 mt-10">
+
+          {/* Pill Informativa */}
+          <div className="bg-blue-50 text-blue-900 px-4 py-2 rounded-xl text-sm font-medium text-center w-full shadow-sm border border-blue-100">
+            Ingrese los 8 dígitos numéricos
           </div>
-          <div className='flex flex-col items-center justify-center w-32 m-auto text-xl transition-transform duration-200 text-stone-800 hover:scale-105'>
-            <button className=' text-slate-900'
+
+          {/* Botón Volver */}
+          <button
+            className="text-gray-500 font-medium hover:text-blue-950 hover:underline underline-offset-4 transition-colors text-sm md:text-base"
             onClick={onVolver}
-                    
-            >volver</button>
-          </div>
+          >
+            Volver al inicio
+          </button>
         </div>
+
       </div>
-    
-    </>
-  )
-
-
+    </div>
+  );
 };
 
 export default PanelDni;
