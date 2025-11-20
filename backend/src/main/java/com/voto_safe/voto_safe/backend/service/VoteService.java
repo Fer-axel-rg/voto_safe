@@ -1,0 +1,1 @@
+// Validaciones de voto único, fechas, etc.

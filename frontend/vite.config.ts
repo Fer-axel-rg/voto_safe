@@ -10,4 +10,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  //Necesario para el deploy en vercel
+  build: {
+    outDir: 'dist',
+  }
 })

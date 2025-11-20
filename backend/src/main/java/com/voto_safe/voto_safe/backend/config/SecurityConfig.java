@@ -1,0 +1,1 @@
+//Configurar JWT de Supabase
