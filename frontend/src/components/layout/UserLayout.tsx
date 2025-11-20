@@ -28,7 +28,7 @@ export default function UserLayout() {
         <div className="container mx-auto px-4 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Vote size={32} />
-            <h1 className="text-2xl font-bold">Voto Safe 2.0</h1>
+            <h1 className="text-2xl font-bold"></h1>
           </div>
 
           <div className="flex items-center gap-6">
@@ -36,7 +36,7 @@ export default function UserLayout() {
               <p className="text-sm opacity-80">Bienvenido(a)</p>
               <p className="font-semibold">{user.fullName}</p>
             </div>
-            
+
             <button
               onClick={() => setShowLogoutModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"

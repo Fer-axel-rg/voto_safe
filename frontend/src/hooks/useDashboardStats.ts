@@ -14,7 +14,7 @@ export interface DashboardStats {
   totalUsersCount: number;
   voterPercentage: number;
   upcomingElections: Election[]; // <-- Nuevo
-  activeElection: Election | null; // <-- Nuevo
+  activeElections: Election[]; // <-- Nuevo
 }
 
 export const useDashboardStats = () => {
@@ -25,7 +25,7 @@ export const useDashboardStats = () => {
     totalUsersCount: 0,
     voterPercentage: 0,
     upcomingElections: [], // <-- Nuevo
-    activeElection: null, // <-- Nuevo
+    activeElections: [], // <-- Nuevo
   });
   const [loading, setLoading] = useState(true);
 
@@ -33,16 +33,16 @@ export const useDashboardStats = () => {
     setLoading(true);
     try {
       const adminName = user?.fullName || 'Admin';
-      
+
       // --- Lógica de Elecciones ---
       const elections = localStorageUtils.getElections();
 
       // Activas
-      const activeElections = elections.filter(
+      const activeElectionsList = elections.filter(
         (e) => e.status === 'active'
       );
-      const activeElectionsCount = activeElections.length;
-      const activeElection = activeElections.length > 0 ? activeElections[0] : null;
+      const activeElectionsCount = activeElectionsList.length;
+
 
       // Próximas (ordenadas por fecha de inicio más cercana)
       const upcomingElections = elections
@@ -53,12 +53,12 @@ export const useDashboardStats = () => {
       // --- Lógica de Usuarios (sin cambios) ---
       const usersData = localStorage.getItem(MOCK_USERS_KEY);
       const mockUsers: MockUser[] = usersData ? JSON.parse(usersData) : [];
-      
+
       const totalUsersCount = mockUsers.length;
       const voterCount = mockUsers.filter(u => u.Estado === 'voto').length;
-      
-      const voterPercentage = totalUsersCount > 0 
-        ? (voterCount / totalUsersCount) * 100 
+
+      const voterPercentage = totalUsersCount > 0
+        ? (voterCount / totalUsersCount) * 100
         : 0;
 
       setStats({
@@ -67,7 +67,7 @@ export const useDashboardStats = () => {
         totalUsersCount,
         voterPercentage,
         upcomingElections, // <-- Nuevo
-        activeElection, // <-- Nuevo
+        activeElections: activeElectionsList, // <-- Nuevo
       });
 
     } catch (error) {

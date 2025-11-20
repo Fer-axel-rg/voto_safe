@@ -1,104 +1,120 @@
-// src/pages/admin/Dashboard/DashboardPage.tsx
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useNavigate } from "react-router-dom";
 import StatCard from "@/components/dashboard/StatCard";
 import VoterChartCard from "@/components/dashboard/VoterChartCard";
-// Nuevas importaciones
 import UpcomingElectionCard from "@/components/dashboard/UpcomingElectionCard";
 import ActiveElectionAnalysisCard from "@/components/dashboard/ActiveElectionAnalysisCard";
 
 export default function DashboardPage() {
-  // El hook ahora provee 'upcomingElections' y 'activeElection'
+  // El hook ahora trae 'activeElections' (Array)
   const { stats, loading } = useDashboardStats();
+  const navigate = useNavigate();
 
   const formatUserCount = (count: number) => {
-    if (count >= 1_000_000) {
-      return `${(count / 1_000_000).toFixed(1).replace('.0', '')}M`;
-    }
-    if (count >= 1_000) {
-      return `${(count / 1_000).toFixed(1).replace('.0', '')}K`;
-    }
+    if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace('.0', '')}M`;
+    if (count >= 1_000) return `${(count / 1_000).toFixed(1).replace('.0', '')}K`;
     return count.toString();
   };
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto flex justify-center items-center h-64">
-        <p className="text-gray-500">Cargando estadísticas...</p>
+      <div className="flex justify-center items-center h-64 w-full">
+        <p className="text-gray-500 animate-pulse">Cargando estadísticas...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Saludo */}
+    <div className="max-w-[1350px] mx-auto px-4 sm:px-6 pb-10 animate-fadeIn">
 
-
-      {/* Cards de Estadísticas */}
-      <div className=" gap-6 mb-12 border-2 border-blue-950/30 p-5 rounded-xl flex flex-col justify-between items-center">
-        <h1 className="text-3xl font-semibold text-blue-950 mb-0">
+      {/* --- 1. SECCIÓN SUPERIOR: SALUDO Y ESTADÍSTICAS --- */}
+      <div className="mb-8 md:mb-12 border-2 border-blue-950/30 p-4 md:p-6 rounded-2xl bg-white/50 shadow-sm">
+        <h1 className="text-2xl md:text-3xl font-bold text-blue-950 mb-6 text-center md:text-left">
           Hola, {stats.adminName}
         </h1>
-        <div className="flex flex-row justify-center items-center gap-[25%]">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8 items-center">
           <StatCard
             title="Elecciones Vigentes"
             value={stats.activeElectionsCount}
-
           />
           <StatCard
             title="Total de Usuarios"
             value={stats.totalUsersCount}
             trend={`+${formatUserCount(stats.totalUsersCount)}`}
           />
-          <VoterChartCard
-            title="Votos vs Usuarios"
-            percentage={stats.voterPercentage}
-            subtitle="Del total de usuarios"
-          />
+          <div className="sm:col-span-2 lg:col-span-1 w-full">
+            <VoterChartCard
+              title="Votos vs Usuarios"
+              percentage={stats.voterPercentage}
+              subtitle="Del total de usuarios"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Próximas Elecciones (Ahora dinámico) */}
-      <section className="mb-12 border-2 border-blue-950/30 p-5 rounded-xl ">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+      {/* --- 2. SECCIÓN PRÓXIMAS ELECCIONES --- */}
+      <section className="mb-8 md:mb-12 border-2 border-blue-950/30 p-4 md:p-6 rounded-2xl bg-white/50">
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">
           Próximas Elecciones
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-2">
-          {/* Renderiza las próximas elecciones. Si no hay, muestra placeholders.
-          */}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stats.upcomingElections.length > 0 ? (
             stats.upcomingElections.map((election) => (
               <UpcomingElectionCard key={election.id} election={election} />
             ))
           ) : (
-            // Mostrar placeholders si no hay elecciones próximas
             <>
               <UpcomingElectionCard election={null} />
               <UpcomingElectionCard election={null} />
               <UpcomingElectionCard election={null} />
             </>
           )}
-
-          {/* Rellenar si hay 1 o 2 elecciones para que siempre se vean 3 tarjetas */}
+          {/* Placeholders de relleno visual */}
           {stats.upcomingElections.length === 1 && (
-            <>
-              <UpcomingElectionCard election={null} />
-              <UpcomingElectionCard election={null} />
-            </>
+            <div className="hidden md:block"><UpcomingElectionCard election={null} /></div>
           )}
           {stats.upcomingElections.length === 2 && (
-            <UpcomingElectionCard election={null} />
+            <div className="hidden lg:block"><UpcomingElectionCard election={null} /></div>
           )}
         </div>
       </section>
 
-      {/* Análisis por Elecciones (Ahora dinámico) */}
-      <section className="border-2 border-blue-950/30 p-5 rounded-xl">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-          Análisis por Elecciones
+      {/* --- 3. SECCIÓN ANÁLISIS POR ELECCIONES (MAPEO CORREGIDO) --- */}
+      <section className="border-2 border-blue-950/30 p-4 md:p-6 rounded-2xl bg-white/50">
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">
+          Análisis por Elecciones Vigentes
         </h2>
-        {/* Renderiza la primera elección activa encontrada */}
-        <ActiveElectionAnalysisCard election={stats.activeElection} />
+
+        {/* Grid Responsivo: 1 columna en móvil, 2 en desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          {/* AQUÍ ESTÁ EL MAPEO */}
+          {stats.activeElections.length > 0 ? (
+            stats.activeElections.map((election) => (
+              <button
+                key={election.id}
+                className="w-full bg-white rounded-xl border border-blue-100 shadow-sm 
+                                   hover:border-blue-300 hover:shadow-md hover:-translate-y-1 
+                                   transition-all duration-200 text-left group focus:outline-none"
+                onClick={() => navigate(`/admin/statistics/${election.id}`)}
+              >
+                <div className="p-2 md:p-4">
+                  <ActiveElectionAnalysisCard election={election} />
+                </div>
+              </button>
+            ))
+          ) : (
+            // Mensaje si no hay ninguna elección activa
+            <div className="col-span-full py-10 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+              <p className="font-medium">No hay elecciones activas en este momento.</p>
+            </div>
+          )}
+
+        </div>
       </section>
+
     </div>
   );
 }

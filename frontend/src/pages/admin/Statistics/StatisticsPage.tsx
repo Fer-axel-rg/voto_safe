@@ -1,5 +1,6 @@
 // src/pages/admin/Statistics/StatisticsPage.tsx
 import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   ChevronDown, MapPin, BarChart3, PieChart as PieIcon,
   Users, Calendar, CheckCircle2, BrainCircuit, TrendingUp,
@@ -10,6 +11,9 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { Gauge } from '@mui/x-charts/Gauge'; // Nuevo componente para análisis de sensibilidad
 
+
+// esta wbda es para obtener el id que se selecciono y sera el que se mostrara 
+// en la pagina de estadisticas
 // --- INTERFACES ---
 interface UserData {
   DNI: string;
@@ -35,6 +39,7 @@ interface Election {
 }
 
 const StatisticsPage = () => {
+  const { id_dashbord } = useParams();
   // --- ESTADOS DE UI ---
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>('');
   const [isDepartamentoOpen, setIsDepartamentoOpen] = useState(false);
@@ -44,7 +49,7 @@ const StatisticsPage = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [parties, setParties] = useState<Party[]>([]);
   const [allElections, setAllElections] = useState<Election[]>([]);
-  const [selectedElectionId, setSelectedElectionId] = useState<string>('');
+  const [selectedElectionId, setSelectedElectionId] = useState<string>(id_dashbord || '');
 
   // 1. CARGAR DATOS
   useEffect(() => {
@@ -66,9 +71,10 @@ const StatisticsPage = () => {
       if (eData) {
         const elections: Election[] = JSON.parse(eData);
         setAllElections(elections);
-        if (!selectedElectionId && elections.length > 0) {
+        if (!id_dashbord && !selectedElectionId && elections.length > 0) {
           const active = elections.find(e => e.status === 'active');
           setSelectedElectionId(active ? active.id : elections[0].id);
+          console.log(setSelectedElectionId);
         }
       }
     } catch (error) {
@@ -77,6 +83,7 @@ const StatisticsPage = () => {
   };
 
   const currentElection = allElections.find(e => e.id === selectedElectionId);
+
 
   // --- CÁLCULOS ESTADÍSTICOS (Simulados) ---
   const stats = useMemo(() => {
