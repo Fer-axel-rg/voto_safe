@@ -9,11 +9,9 @@ import {
 import { PieChart } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { Gauge } from '@mui/x-charts/Gauge'; // Nuevo componente para análisis de sensibilidad
+import { Gauge } from '@mui/x-charts/Gauge';
 
 
-// esta wbda es para obtener el id que se selecciono y sera el que se mostrara 
-// en la pagina de estadisticas
 // --- INTERFACES ---
 interface UserData {
   DNI: string;
@@ -99,7 +97,7 @@ const StatisticsPage = () => {
 
     const results: Record<string, number> = {};
     parties.forEach(p => results[p.id] = 0);
-    const electionSeed = selectedElectionId ? selectedElectionId.charCodeAt(0) : 0; // Para variar resultados por elección
+    const electionSeed = selectedElectionId ? selectedElectionId.charCodeAt(0) : 0;
 
     usuariosQueVotaron.forEach(user => {
       if (parties.length > 0) {
@@ -127,15 +125,14 @@ const StatisticsPage = () => {
     if (!stats.chartData.length) return null;
 
     const top1 = stats.chartData[0];
-    const top2 = stats.chartData[1] || { name: 'Otro', color: '#ccc' }; // Fallback para segundo lugar
-    const top3 = stats.chartData[2] || { name: 'Otro más', color: '#eee' }; // Fallback para tercer lugar
+    const top2 = stats.chartData[1] || { name: 'Otro', color: '#ccc' };
+    const top3 = stats.chartData[2] || { name: 'Otro más', color: '#eee' };
 
-    const winnerConfidence = Math.min(top1.percentage + Math.round(Math.random() * 5 + 5), 100); // 5-10% extra por IA
+    const winnerConfidence = Math.min(top1.percentage + Math.round(Math.random() * 5 + 5), 100);
     const predictedMargin = (winnerConfidence - (top2.percentage + Math.round(Math.random() * 3))).toFixed(1);
 
-    // Predicción de Proyección de Cierre (Line Chart)
     const projectionHours = ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00 (Cierre)'];
-    const top1Actual = [10, 25, 45, 60, 80]; // Votos reales
+    const top1Actual = [10, 25, 45, 60, 80];
     const top2Actual = [8, 20, 35, 45, 55];
 
     return {
@@ -143,13 +140,12 @@ const StatisticsPage = () => {
       predictedWinnerPercentage: winnerConfidence,
       predictedMargin: predictedMargin,
 
-      // Proyección de Cierre
       projectionLineChart: {
         xAxis: [{ data: projectionHours, scaleType: 'point' as const }],
         series: [
           {
             label: `Actual: ${top1.name}`,
-            data: top1Actual.concat(winnerConfidence), // Datos reales + Predicción
+            data: top1Actual.concat(winnerConfidence),
             color: top1.color,
             showMark: true,
             disableHighlight: true,
@@ -163,7 +159,7 @@ const StatisticsPage = () => {
           },
           {
             label: `IA Proyección: ${top1.name}`,
-            data: top1Actual.map(() => NaN).concat(winnerConfidence), // Solo la predicción final
+            data: top1Actual.map(() => NaN).concat(winnerConfidence),
             color: top1.color,
             lineStyle: { strokeDasharray: '5 5' },
             showMark: true,
@@ -171,41 +167,37 @@ const StatisticsPage = () => {
         ]
       },
 
-      // Probabilidad de Victoria
       winProbabilityBarChart: stats.chartData.slice(0, 3).map(c => ({
         name: c.name,
         probability: Math.min(c.percentage + (c.id === top1.id ? 10 : Math.random() * 3), 100),
         color: c.color
       })).sort((a, b) => b.probability - a.probability),
 
-      // Participación por Hora (acumulada vs predicha)
       participationLineChart: {
         xAxis: [{ data: projectionHours.slice(0, 5).concat('Cierre (Pred)'), scaleType: 'point' as const }],
         series: [
           {
             label: 'Participación Actual',
-            data: [5, 15, 30, 45, 60, stats.participacionPct + 15], // Simula crecimiento real y predice el cierre
-            color: '#8884d8', // Morado
+            data: [5, 15, 30, 45, 60, stats.participacionPct + 15],
+            color: '#8884d8',
             area: true,
             showMark: true
           },
           {
             label: 'Pronóstico IA',
-            data: [NaN, NaN, NaN, NaN, 60, stats.participacionPct + 15], // Solo muestra desde donde empieza la predicción
-            color: '#6a0dad', // Morado más oscuro
+            data: [NaN, NaN, NaN, NaN, 60, stats.participacionPct + 15],
+            color: '#6a0dad',
             lineStyle: { strokeDasharray: '3 3' },
             showMark: true
           }
         ]
       },
 
-      // Sensibilidad del Voto Indeciso (Gauge)
-      undecidedVoterImpact: Math.round(Math.random() * 30) + 70 // 70-100% de impacto
+      undecidedVoterImpact: Math.round(Math.random() * 30) + 70
     };
   }, [stats]);
 
 
-  // Datos gráficas generales
   const departamentos = Array.from(new Set(users.map(u => u.Departamento))).sort();
   const barData = stats.chartData.map(c => ({ name: c.name, percentage: c.percentage }));
   const pieData = stats.chartData.map((c, i) => ({ id: i, value: c.percentage, label: `${c.name} (${c.percentage}%)`, color: c.color }));
@@ -213,17 +205,12 @@ const StatisticsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10">
 
-      {/* ================================================================================== */}
       {/* HEADER PRINCIPAL */}
-      {/* ================================================================================== */}
-
-      {/* 1. Título Global */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Panel De Estadísticas</h1>
         <p className="text-gray-500">Análisis y proyección de datos electorales</p>
       </div>
 
-      {/* 2. Fila de Control: Tabs a la Izquierda, Selector a la Derecha */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-gray-200 pb-1">
 
         {/* TABS HORIZONTALES */}
@@ -235,7 +222,6 @@ const StatisticsPage = () => {
           >
             <BarChart3 size={18} />
             GRÁFICOS ESTADÍSTICOS
-            {/* Línea inferior animada */}
             {activeTab === 'statistics' && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-t-full animate-fadeIn" />
             )}
@@ -254,7 +240,7 @@ const StatisticsPage = () => {
           </button>
         </div>
 
-        {/* SELECTOR DE ELECCIÓN (Global para ambas vistas) */}
+        {/* SELECTOR DE ELECCIÓN */}
         <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition-colors">
           <Calendar size={16} className="text-gray-400 mr-2" />
           <select
@@ -273,10 +259,7 @@ const StatisticsPage = () => {
       </div>
 
 
-      {/* ================================================================================== */}
-      {/* CONTENIDO DINÁMICO SEGÚN EL TAB */}
-      {/* ================================================================================== */}
-
+      {/* CONTENIDO DINÁMICO */}
       {!currentElection ? (
         <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-sm border border-gray-200">
           <Calendar className="text-gray-300 w-16 h-16 mb-4" />
@@ -284,13 +267,12 @@ const StatisticsPage = () => {
         </div>
       ) : (
         <>
-          {/* --- VISTA 1: GRÁFICOS ESTADÍSTICOS --- */}
+          {/* VISTA 1: GRÁFICOS ESTADÍSTICOS */}
           {activeTab === 'statistics' && (
             <div className="animate-fadeIn space-y-8">
 
               {/* TARJETAS KPI */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Card Padrón */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-2 border-blue-500 flex items-center justify-between">
                   <div>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Padrón Electoral</p>
@@ -299,7 +281,6 @@ const StatisticsPage = () => {
                   </div>
                   <div className="bg-blue-50 p-3 rounded-full text-blue-600"><Users size={20} /></div>
                 </div>
-                {/* Card Votos */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-2 border-green-500 flex items-center justify-between">
                   <div>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Votos Recibidos</p>
@@ -308,7 +289,6 @@ const StatisticsPage = () => {
                   </div>
                   <div className="bg-green-50 p-3 rounded-full text-green-600"><CheckCircle2 size={20} /></div>
                 </div>
-                {/* Card Participación */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-2 border-purple-500 flex items-center justify-between">
                   <div>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Participación</p>
@@ -324,7 +304,6 @@ const StatisticsPage = () => {
               {/* GRID GRÁFICOS */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                  {/* Candidatos Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {stats.chartData.slice(0, 4).map((c) => (
                       <div key={c.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center hover:shadow-md transition-shadow">
@@ -336,7 +315,6 @@ const StatisticsPage = () => {
                       </div>
                     ))}
                   </div>
-                  {/* Bar Chart */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-700 mb-4 text-sm">Resultados Generales - {currentElection.name}</h3>
                     <div className="h-[300px] w-full">
@@ -356,20 +334,20 @@ const StatisticsPage = () => {
 
                 {/* Sidebar Derecha */}
                 <div className="space-y-8">
-                  {/* Filtro */}
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 z-100 text-white shadow-lg relative overflow-hidden">
+                  {/* Filtro - CORREGIDO AQUÍ */}
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg relative">
                     <MapPin className="absolute -right-4 -bottom-4 text-white opacity-10 w-32 h-32" />
                     <h3 className="font-bold text-sm mb-4 relative z-10 uppercase tracking-widest opacity-90">Filtro Regional</h3>
-                    <div className="relative z-10">
+                    <div className="relative z-[100]">
                       <button onClick={() => setIsDepartamentoOpen(!isDepartamentoOpen)} className="w-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold py-3 px-4 rounded-xl flex justify-between items-center hover:bg-white/20 transition-all">
                         {selectedDepartamento || 'Todo el País'}
                         <ChevronDown size={18} />
                       </button>
                       {isDepartamentoOpen && (
-                        <div className="absolute top-full mt-2 left-0 w-full bg-white text-gray-800 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-200">
-                          <button onClick={() => { setSelectedDepartamento(''); setIsDepartamentoOpen(false); }} className="w-full  text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600 border-b text-sm">Nacional</button>
+                        <div className="absolute top-full mt-2 left-0 w-full bg-white text-gray-800 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-[100] animate-in fade-in zoom-in-95 duration-200">
+                          <button onClick={() => { setSelectedDepartamento(''); setIsDepartamentoOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600 border-b text-sm">Nacional</button>
                           {departamentos.map(dep => (
-                            <button key={dep} onClick={() => { setSelectedDepartamento(dep); setIsDepartamentoOpen(false); }} className="w-full text-left z-100 px-4 py-2 hover:bg-gray-50 border-b last:border-0 text-sm">{dep}</button>
+                            <button key={dep} onClick={() => { setSelectedDepartamento(dep); setIsDepartamentoOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 border-b last:border-0 text-sm">{dep}</button>
                           ))}
                         </div>
                       )}
@@ -400,11 +378,10 @@ const StatisticsPage = () => {
             </div>
           )}
 
-          {/* --- VISTA 2: PREDICCIONES (GRÁFICOS DE IA AVANZADOS) --- */}
+          {/* VISTA 2: PREDICCIONES */}
           {activeTab === 'predictions' && predictionData && (
             <div className="animate-fadeIn space-y-8">
 
-              {/* Encabezado de Sección */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -421,9 +398,7 @@ const StatisticsPage = () => {
                 </div>
               </div>
 
-              {/* Muestreo de KPIs Predictivos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Ganador Proyectado */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-400 border-l-4">
                   <div className="flex items-center gap-3 mb-2">
                     <Trophy className="text-purple-600" size={20} />
@@ -435,7 +410,6 @@ const StatisticsPage = () => {
                   </h3>
                   <p className="text-xs text-gray-400 mt-1">Confiabilidad del modelo: 95%</p>
                 </div>
-                {/* Margen de Victoria */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-400 border-l-4">
                   <div className="flex items-center gap-3 mb-2">
                     <Target className="text-blue-600" size={20} />
@@ -446,7 +420,6 @@ const StatisticsPage = () => {
                   </h3>
                   <p className="text-xs text-gray-400 mt-1">Sobre el segundo candidato</p>
                 </div>
-                {/* Participación Final Estimada */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-green-400 border-l-4">
                   <div className="flex items-center gap-3 mb-2">
                     <Users className="text-green-600" size={20} />
@@ -457,7 +430,6 @@ const StatisticsPage = () => {
                   </h3>
                   <p className="text-xs text-gray-400 mt-1">Pronóstico al cierre de urnas</p>
                 </div>
-                {/* Impacto del Voto Indeciso */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-amber-400 border-l-4">
                   <div className="flex items-center gap-3 mb-2">
                     <Lightbulb className="text-amber-600" size={20} />
@@ -470,11 +442,8 @@ const StatisticsPage = () => {
                 </div>
               </div>
 
-
-              {/* GRID DE GRÁFICOS DE PREDICCIÓN */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
 
-                {/* GRÁFICO 1: Proyección de Cierre (Line Chart con Área) */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-950/50">
                   <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
                     <Clock size={18} className="text-blue-600" /> Proyección de Votos por Hora
@@ -502,7 +471,6 @@ const StatisticsPage = () => {
                   </div>
                 </div>
 
-                {/* GRÁFICO 2: Probabilidad de Victoria (Bar Chart Horizontal) */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-950/50">
                   <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
                     <ShieldCheck size={18} className="text-green-600" /> Probabilidad de Victoria
@@ -518,7 +486,7 @@ const StatisticsPage = () => {
                       series={[{
                         dataKey: 'probability',
                         label: 'Probabilidad (%)',
-                        color: '#6a0dad', // Purple color for AI
+                        color: '#6a0dad',
                         valueFormatter: (v) => `${v.toFixed(1)}%`
                       }]}
                       layout="horizontal"
@@ -528,7 +496,6 @@ const StatisticsPage = () => {
                   </div>
                 </div>
 
-                {/* GRÁFICO 3: Predicción de Participación por Hora */}
                 <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-950/50">
                   <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
                     <Users size={18} className="text-purple-600" /> Predicción de Participación Acumulada

@@ -11,12 +11,14 @@ import img3 from "./../img/landing/VotaConResponsabilidad3.png";
 import ModalInfo from "./../components/landingPage/moreInfo";
 import DniPanel from "./../components/landingPage/DniPanel";
 import DniInfoPanel from "./../components/landingPage/DniInfoPanel";
+import ChatWidget from "./../components/userDashbord/chatWidget"; // 👈 Importamos desde la carpeta components
 
 const images = [img1, img2, img3];
 
 const LandingPage = () => {
     const [index, setIndex] = useState(0);
     const [showModal, setShowModal] = useState(false);
+    const [showChatIA, setShowChatIA] = useState(false); // Estado para Chat IA
     const [pasoActual, setPasoActual] = useState<'inicio' | 'dni' | 'DniInfo'>('inicio');
 
     useEffect(() => {
@@ -39,13 +41,9 @@ const LandingPage = () => {
             </div>
 
             {/* --- BODY CONTENT --- */}
-            {/* CAMBIO: Quitamos 'items-center' global para que no lo baje tanto.
-          Usamos 'pt-10' o 'lg:pt-20' para controlarlo manualmente desde arriba.
-      */}
             <div className="flex-1 flex flex-col md:flex-row justify-center w-full max-w-[1600px] mx-auto p-6 md:px-12 lg:px-20 gap-10 lg:gap-24 pt-8 md:pt-16 lg:pt-20">
 
                 {/* --- COLUMNA IZQUIERDA (CARRUSEL) --- */}
-                {/* CAMBIO: Aumenté max-w para PC (lg:max-w-[600px]) */}
                 <div className="w-full md:w-1/2 flex justify-center md:justify-end items-start animate-fadeIn">
                     <div className="relative w-full max-w-[350px] md:max-w-[500px] lg:max-w-[600px] aspect-square">
                         <img
@@ -53,20 +51,17 @@ const LandingPage = () => {
                             alt="Campaña voto responsable"
                             className="w-full h-full object-contain rounded-3xl shadow-2xl transition-all duration-700 hover:scale-[1.02]"
                         />
-                        {/* Decoración de fondo más grande */}
                         <div className="absolute -z-10 top-6 -left-6 w-full h-full bg-blue-950/10 rounded-3xl"></div>
                     </div>
                 </div>
 
                 {/* --- COLUMNA DERECHA (CONTENIDO DINÁMICO) --- */}
-                {/* items-start para que empiece arriba y no se centre verticalmente contra la imagen */}
                 <div className="w-full md:w-1/2 flex flex-col items-center md:items-start justify-start pt-4 md:pt-10">
 
                     {/* VISTA: INICIO */}
                     {pasoActual === 'inicio' && (
                         <div className="flex flex-col items-center md:items-start text-center md:text-left w-full max-w-2xl animate-fadeIn">
 
-                            {/* CAMBIO: Textos mucho más grandes en LG y XL */}
                             <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-blue-950 font-poppins leading-tight mb-6 lg:mb-8">
                                 ELECCIONES <br className="hidden md:block" /> GENERALES <span className="text-blue-600">2026</span>
                             </h1>
@@ -75,18 +70,15 @@ const LandingPage = () => {
                                 <img
                                     src={iconCheck}
                                     alt="Check icon"
-                                    // CAMBIO: Icono más grande
                                     className="w-20 md:w-24 lg:w-28"
                                 />
                             </div>
 
-                            {/* CAMBIO: Texto de párrafo más grande */}
                             <p className="text-lg md:text-xl lg:text-2xl text-gray-600 font-medium mb-10 lg:mb-12 max-w-xl">
                                 Realiza tu voto seguro, resuelve tus dudas para un voto
                                 responsable y siempre con previo estudio.
                             </p>
 
-                            {/* CAMBIO: Botón más grande y robusto */}
                             <button
                                 onClick={() => setPasoActual('dni')}
                                 className="w-full sm:w-2/3 md:w-auto md:px-16 py-4 lg:py-5 bg-blue-950 text-white text-xl lg:text-2xl font-semibold rounded-2xl shadow-xl 
@@ -119,15 +111,28 @@ const LandingPage = () => {
                 </div>
             </div>
 
-            {/* --- BOTÓN AYUDA --- */}
+            {/* --- BOTÓN AYUDA (?) - IZQUIERDA --- */}
             <button
                 onClick={() => setShowModal(true)}
-                className="fixed bottom-8 right-8 w-16 h-16 lg:w-20 lg:h-20 bg-blue-950 text-white rounded-full shadow-2xl 
+                className="fixed bottom-8 left-8 w-16 h-16 lg:w-20 lg:h-20 bg-blue-950 text-white rounded-full shadow-2xl 
                    flex items-center justify-center text-3xl lg:text-4xl font-bold z-40
                    hover:scale-110 hover:bg-blue-800 transition-all duration-300"
             >
                 ?
             </button>
+
+            {/* --- BOTÓN CHAT IA - DERECHA --- */}
+            <button
+                onClick={() => setShowChatIA(!showChatIA)}
+                className="fixed bottom-8 right-8 w-16 h-16 lg:w-20 lg:h-20 bg-blue-950 text-white rounded-full shadow-2xl 
+                   flex items-center justify-center text-2xl lg:text-3xl font-bold z-40
+                   hover:scale-110 hover:bg-blue-800 transition-all duration-300"
+            >
+                💬
+            </button>
+
+            {/* --- COMPONENTE CHAT IA --- */}
+            {showChatIA && <ChatWidget onClose={() => setShowChatIA(false)} />}
 
             <ModalInfo open={showModal} onClose={() => setShowModal(false)} />
 
