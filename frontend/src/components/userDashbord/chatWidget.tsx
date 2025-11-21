@@ -8,28 +8,29 @@ interface Message {
 export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Nuevo estado para mostrar "Escribiendo..."
 
   // 📌 Respuestas automáticas mejoradas
-  const getAIResponse = (text: string): string => {
-    const msg = text.toLowerCase();
+  //const getAIResponse = (text: string): string => {
+  //  const msg = text.toLowerCase();
+//
+  //  if (msg.includes("hola") || msg.includes("buenas")) {
+  //    return "¡Hola! ¿Cómo estás?";
+  //  }
+//
+  //  if (msg.includes("ayuda") || msg.includes("ayudame") || msg.includes("ayudar")) {
+  //    return "Claro, ¿en qué puedo ayudarte?";
+  //  }
+//
+  //  if (msg.includes("adios") || msg.includes("me despido") || msg.includes("hasta luego") || msg.includes("chau")) {
+  //    return "Fue un gusto hablar contigo, ¡Hasta pronto!";
+  //  }
+//
+  //  //  Respuesta genérica elegida: Opción A
+  //  return "Entiendo, sigue contándome.";
+  //};
 
-    if (msg.includes("hola") || msg.includes("buenas")) {
-      return "¡Hola! ¿Cómo estás?";
-    }
-
-    if (msg.includes("ayuda") || msg.includes("ayudame") || msg.includes("ayudar")) {
-      return "Claro, ¿en qué puedo ayudarte?";
-    }
-
-    if (msg.includes("adios") || msg.includes("me despido") || msg.includes("hasta luego") || msg.includes("chau")) {
-      return "Fue un gusto hablar contigo, ¡Hasta pronto!";
-    }
-
-    //  Respuesta genérica elegida: Opción A
-    return "Entiendo, sigue contándome.";
-  };
-
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     const userMsg = inputValue;
@@ -37,10 +38,22 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     setMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
     setInputValue("");
 
-    setTimeout(() => {
-      const response = getAIResponse(userMsg);
-      setMessages((prev) => [...prev, { sender: "ia", text: response }]);
-    }, 600);
+    try {
+      // 1. Llamada al Backend que acabamos de crear
+      const response = await fetch(`http://localhost:8080/api/chat/generate?message=${encodeURIComponent(userMsg)}`);
+      
+      if (!response.ok) throw new Error("Error en la red");
+
+      const data = await response.json();
+      
+      // 2. Agregar respuesta de la IA
+      setMessages((prev) => [...prev, { sender: "ia", text: data.response }]);
+    } catch (error) {
+      console.error("Error conectando con la IA:", error);
+      setMessages((prev) => [...prev, { sender: "ia", text: "Lo siento, no puedo conectar con el servidor en este momento." }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -104,6 +117,23 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         ))}
+        {/* --- AGREGAR ESTO AQUÍ --- */}
+        {isLoading && (
+          <div style={{ textAlign: "left", marginBottom: "10px" }}>
+            <div style={{
+              display: "inline-block",
+              backgroundColor: "#d4e4ff",
+              color: "#555",
+              padding: "8px 12px",
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontStyle: "italic"
+            }}>
+              Escribiendo...
+            </div>
+          </div>
+        )}
+        {/* ------------------------- */}
       </div>
 
       {/* Input */}
