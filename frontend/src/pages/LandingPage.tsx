@@ -11,7 +11,7 @@ import img3 from "./../img/landing/VotaConResponsabilidad3.png";
 import ModalInfo from "./../components/landingPage/moreInfo";
 import DniPanel from "./../components/landingPage/DniPanel";
 import DniInfoPanel from "./../components/landingPage/DniInfoPanel";
-import ChatWidget from "./../components/userDashbord/chatWidget"; // 👈 Importamos desde la carpeta components
+import ChatWidget from "./../components/userDashbord/chatWidget"; //
 
 const images = [img1, img2, img3];
 
