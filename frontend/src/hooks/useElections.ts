@@ -1,93 +1,37 @@
-//Lógica de localStorage
-// src/hooks/useElections.ts
-
-import { useState, useEffect } from 'react';
-import type { Election, ElectionFilters } from '@/types/election.types';
-import { localStorageUtils } from '@/utils/localStorage';
+import { useState } from 'react';
+// Si tienes un tipo definido, impórtalo, si no, usa any temporalmente
+// import type { Election } from '@/types/election.types'; 
 
 export const useElections = () => {
-  const [elections, setElections] = useState<Election[]>([]);
-  const [filteredElections, setFilteredElections] = useState<Election[]>([]);
-  const [filters, setFilters] = useState<ElectionFilters>({
-    name: '',
-    type: 'all',
-    status: 'all',
-    startDate: '',
-    endDate: '',
-  });
-
-  // Cargar elecciones al montar
-  useEffect(() => {
-    loadElections();
-  }, []);
-
-  // Aplicar filtros cuando cambian
-  useEffect(() => {
-    applyFilters();
-  }, [elections, filters]);
-
-  const loadElections = () => {
-    const data = localStorageUtils.getElections();
-    setElections(data);
-  };
-
-  const addElection = (election: Election) => {
-    localStorageUtils.addElection(election);
-    loadElections();
-  };
-
-  const updateElection = (id: string, election: Election) => {
-    localStorageUtils.updateElection(id, election);
-    loadElections();
-  };
-
-  const deleteElection = (id: string) => {
-    localStorageUtils.deleteElection(id);
-    loadElections();
-  };
-
-  const applyFilters = () => {
-    let filtered = [...elections];
-
-    // Filtro por nombre
-    if (filters.name.trim()) {
-      filtered = filtered.filter((e) =>
-        e.name.toLowerCase().includes(filters.name.toLowerCase())
-      );
+  // Devolvemos datos vacíos o estáticos para que no explote
+  const [elections] = useState<any[]>([
+    // Puedes dejar esto vacío [] o poner un dato falso para ver algo:
+    /*
+    {
+       id: '1', 
+       name: 'Elección Pendiente (Backend no conectado)', 
+       status: 'upcoming', 
+       startDate: new Date().toISOString(),
+       endDate: new Date().toISOString()
     }
+    */
+  ]);
 
-    // Filtro por tipo
-    if (filters.type !== 'all') {
-      filtered = filtered.filter((e) => e.type === filters.type);
-    }
+  const [loading] = useState(false);
+  const [error] = useState(null);
 
-    // Filtro por estado
-    if (filters.status !== 'all') {
-      filtered = filtered.filter((e) => e.status === filters.status);
-    }
-
-    // Filtro por rango de fechas
-    if (filters.startDate) {
-      filtered = filtered.filter((e) => e.startDate >= filters.startDate);
-    }
-    if (filters.endDate) {
-      filtered = filtered.filter((e) => e.endDate <= filters.endDate);
-    }
-
-    setFilteredElections(filtered);
-  };
-
-  const updateFilters = (newFilters: Partial<ElectionFilters>) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
-  };
+  // Funciones vacías para que los botones no rompan la app
+  const createElection = async (data: any) => { console.log("Simulando creación:", data); };
+  const updateElection = async (id: string, data: any) => { console.log("Simulando update:", id); };
+  const deleteElection = async (id: string) => { console.log("Simulando delete:", id); };
 
   return {
-    elections: filteredElections,
-    filters,
-    addElection,
+    elections,
+    loading,
+    error,
+    createElection,
     updateElection,
     deleteElection,
-    updateFilters,
-    loadElections,
+    refreshElections: () => console.log("Refrescar...")
   };
 };

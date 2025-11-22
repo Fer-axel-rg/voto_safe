@@ -1,8 +1,5 @@
-// src/hooks/useActiveElections.ts
-
 import { useState, useEffect } from 'react';
 import type { Election } from '@/types/election.types';
-import { localStorageUtils } from '@/utils/localStorage';
 
 export const useActiveElections = () => {
   const [elections, setElections] = useState<Election[]>([]);
@@ -15,21 +12,15 @@ export const useActiveElections = () => {
   const loadActiveElections = () => {
     setLoading(true);
     try {
-      const allElections = localStorageUtils.getElections();
+      // LÓGICA SILENCIADA:
+      // Aquí antes leías del localStorage. Ahora simplemente no hacemos nada
+      // o devolvemos un array vacío para que la UI no se rompa.
+      console.log("useActiveElections: Hook en modo espera (Backend desconectado)");
       
-      // Filtrar solo elecciones activas o por comenzar
-      const activeElections = allElections.filter(
-        (election) => election.status === 'active' || election.status === 'upcoming'
-      );
-      
-      // Ordenar por fecha de inicio (más recientes primero)
-      const sorted = activeElections.sort((a, b) => {
-        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-      });
-      
-      setElections(sorted);
+      setElections([]); 
+
     } catch (error) {
-      console.error('Error al cargar elecciones activas:', error);
+      console.error('Error (ignorado):', error);
     } finally {
       setLoading(false);
     }

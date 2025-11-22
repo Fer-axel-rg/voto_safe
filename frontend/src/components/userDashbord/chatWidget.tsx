@@ -7,50 +7,45 @@ interface Message {
 
 export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Nuevo estado para mostrar "Escribiendo..."
+  const [inputValue, setInputValue] = useState(""); // Usaremos 'inputValue'
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 📌 Respuestas automáticas mejoradas
-  //const getAIResponse = (text: string): string => {
-  //  const msg = text.toLowerCase();
-//
-  //  if (msg.includes("hola") || msg.includes("buenas")) {
-  //    return "¡Hola! ¿Cómo estás?";
-  //  }
-//
-  //  if (msg.includes("ayuda") || msg.includes("ayudame") || msg.includes("ayudar")) {
-  //    return "Claro, ¿en qué puedo ayudarte?";
-  //  }
-//
-  //  if (msg.includes("adios") || msg.includes("me despido") || msg.includes("hasta luego") || msg.includes("chau")) {
-  //    return "Fue un gusto hablar contigo, ¡Hasta pronto!";
-  //  }
-//
-  //  //  Respuesta genérica elegida: Opción A
-  //  return "Entiendo, sigue contándome.";
-  //};
-
-  const handleSend = async () => {
+  const handleSendMessage = async () => {
+    // 1. CORRECCIÓN: Usamos 'inputValue'
     if (!inputValue.trim()) return;
 
-    const userMsg = inputValue;
+    // Guardamos el texto actual antes de borrarlo
+    const currentMessage = inputValue;
 
-    setMessages((prev) => [...prev, { sender: "user", text: userMsg }]);
+    // 2. Limpiamos el input visualmente de inmediato
     setInputValue("");
+    setIsLoading(true);
+
+    // 3. Agregamos el mensaje del usuario a la lista
+    // Usamos "prev" para asegurar que no perdemos mensajes si el usuario escribe rápido
+    setMessages((prev) => [...prev, { text: currentMessage, sender: "user" }]);
 
     try {
-      // 1. Llamada al Backend que acabamos de crear
-      const response = await fetch(`http://localhost:8080/api/chat/generate?message=${encodeURIComponent(userMsg)}`);
-      
-      if (!response.ok) throw new Error("Error en la red");
+      const response = await fetch('http://localhost:8080/api/v1/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // 4. CORRECCIÓN: Enviamos 'currentMessage' (que viene de inputValue)
+        body: JSON.stringify({ message: currentMessage }),
+      });
+
+      if (!response.ok) throw new Error('Error en el servidor');
 
       const data = await response.json();
-      
-      // 2. Agregar respuesta de la IA
-      setMessages((prev) => [...prev, { sender: "ia", text: data.response }]);
+      const botReply = data.response; 
+
+      // 5. Agregamos la respuesta de la IA
+      setMessages((prev) => [...prev, { text: botReply, sender: 'ia' }]); 
+
     } catch (error) {
       console.error("Error conectando con la IA:", error);
-      setMessages((prev) => [...prev, { sender: "ia", text: "Lo siento, no puedo conectar con el servidor en este momento." }]);
+      setMessages((prev) => [...prev, { text: "Lo siento, tuve un error de conexión.", sender: 'ia' }]);
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +112,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         ))}
-        {/* --- AGREGAR ESTO AQUÍ --- */}
+        
         {isLoading && (
           <div style={{ textAlign: "left", marginBottom: "10px" }}>
             <div style={{
@@ -133,7 +128,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         )}
-        {/* ------------------------- */}
       </div>
 
       {/* Input */}
@@ -141,18 +135,20 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         <input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          // 6. CORRECCIÓN: Llamar a handleSendMessage
+          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
           placeholder="Escribe..."
           style={{
             flex: 1,
             padding: "8px",
             borderRadius: "8px",
             border: "1px solid #aaa",
-            color: "black" // ← ahora sí se ve al escribir
+            color: "black"
           }}
         />
         <button
-          onClick={handleSend}
+          // 7. CORRECCIÓN: Llamar a handleSendMessage
+          onClick={handleSendMessage}
           style={{
             backgroundColor: "#0f366d",
             color: "white",
