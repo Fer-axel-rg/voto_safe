@@ -14,7 +14,7 @@ public interface VoteRepository extends JpaRepository<Voto, String> {
     boolean existsByIdUsuario(String idUsuario);
     
     long countByIdEleccion(String idEleccion);
-
+    List<Voto> findByIdUsuarioIn(List<String> userIds);
     // --- CONSULTA MAESTRA CORREGIDA ---
     @Query(value = "SELECT p.nombre, p.url_logo, COUNT(d.id_detalle_voto) " + 
                    "FROM partidos p " +
