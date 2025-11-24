@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import OnpeLogo from './../img/landing/iconoonpe.png';
 import { useNavigate } from 'react-router-dom';
 import ChatWidget from '../components/userDashbord/chatWidget';
-import MoreInfoPostulante from '../components/userDashbord/moreInfoPostulante';
+import MoreInfoPostulante from '../components/userDashbord/moreInfoPostulante'; // <- requiere cambios :v 
 import Swal from 'sweetalert2';
 
 // ---- 1. INTERFACES (NUEVO: Para leer tus datos reales) ----

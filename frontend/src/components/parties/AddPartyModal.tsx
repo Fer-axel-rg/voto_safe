@@ -117,16 +117,16 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between rounded-t-3xl z-10">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-8 py-6 bg-white border-b border-gray-200 rounded-t-3xl">
           <h2 className="text-2xl font-semibold text-gray-800">
             {party ? "Modificar Partido" : "Agregar Nuevo Partido"}
           </h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 transition-colors hover:text-gray-600"
           >
             <X size={24} />
           </button>
@@ -137,7 +137,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
           {/* Datos del Partido */}
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700">
                 Nombre del partido
               </label>
               <input
@@ -150,7 +150,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700">
                 Representante del Partido
               </label>
               <input
@@ -164,7 +164,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
               Url de la imagen del partido
             </label>
             <input
@@ -178,22 +178,22 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
 
           {/* Candidatos por Categoría */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            <h3 className="mb-4 text-lg font-semibold text-gray-800">
               Agregar Candidatos por categoría
             </h3>
 
             {candidates.map((candidate) => (
               <div
                 key={candidate.categoryId}
-                className="bg-gray-50 rounded-2xl p-6 mb-4"
+                className="p-6 mb-4 bg-gray-50 rounded-2xl"
               >
-                <h4 className="text-md font-semibold text-gray-800 mb-4">
+                <h4 className="mb-4 font-semibold text-gray-800 text-md">
                   Categoría {candidate.categoryName}
                 </h4>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Nombres</label>
+                    <label className="block mb-1 text-sm text-gray-700">Nombres</label>
                     <input
                       type="text"
                       value={candidate.firstName}
@@ -206,7 +206,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Apellidos</label>
+                    <label className="block mb-1 text-sm text-gray-700">Apellidos</label>
                     <input
                       type="text"
                       value={candidate.lastName}
@@ -220,7 +220,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm text-gray-700 mb-1">
+                  <label className="block mb-1 text-sm text-gray-700">
                     Url de la imagen del candidato
                   </label>
                   <input
@@ -236,7 +236,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Sexo</label>
+                    <label className="block mb-1 text-sm text-gray-700">Sexo</label>
                     <select
                       value={candidate.gender}
                       onChange={(e) =>
@@ -251,7 +251,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-700 mb-1">Tema</label>
+                    <label className="block mb-1 text-sm text-gray-700">Tema</label>
                     <select
                       value={candidate.topic}
                       onChange={(e) =>
@@ -271,7 +271,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">
+                  <label className="block mb-1 text-sm text-gray-700">
                     Aquí una descripción de las propuestas del candidato según tema...
                   </label>
                   <textarea
@@ -290,7 +290,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
         </div>
 
         {/* Footer Buttons */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-8 py-6 flex gap-4 rounded-b-3xl">
+        <div className="sticky bottom-0 flex gap-4 px-8 py-6 bg-white border-t border-gray-200 rounded-b-3xl">
           <button
             onClick={handleSubmit}
             className="flex-1 bg-[#0f366d] text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition-colors"
@@ -299,7 +299,7 @@ export default function AddPartyModal({ isOpen, election, party, onClose, onSave
           </button>
           <button
             onClick={handleClose}
-            className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400 transition-colors"
+            className="flex-1 py-3 font-semibold text-gray-700 transition-colors bg-gray-300 rounded-xl hover:bg-gray-400"
           >
             CANCELAR
           </button>

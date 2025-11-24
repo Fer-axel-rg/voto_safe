@@ -29,11 +29,11 @@ export default function ElectionFiltersForParties({
 
   return (
     <div className="w-80 bg-[#eaf2fc] rounded-[30px] p-6 shadow-[0_4px_12px_rgba(182,187,211,0.3)] h-fit">
-      <h3 className="text-lg font-semibold text-gray-800 mb-6">Filtros</h3>
+      <h3 className="mb-6 text-lg font-semibold text-gray-800">Filtros</h3>
 
       {/* Filtro Nombre */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block mb-2 text-sm font-medium text-gray-700">
           Nombre:
         </label>
         <input
@@ -47,7 +47,7 @@ export default function ElectionFiltersForParties({
 
       {/* Filtro Tipo */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block mb-2 text-sm font-medium text-gray-700">
           Tipo:
         </label>
         <div className="space-y-2">
@@ -96,7 +96,7 @@ export default function ElectionFiltersForParties({
 
       {/* Filtro Estado */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block mb-2 text-sm font-medium text-gray-700">
           Estado:
         </label>
         <div className="space-y-2">

@@ -36,7 +36,7 @@ export default function ElectionCardForParties({
       </span>
 
       {/* Título */}
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 pr-32 uppercase">
+      <h3 className="pr-32 mb-4 text-lg font-semibold text-gray-800 uppercase">
         {election.name}
       </h3>
 
@@ -44,7 +44,7 @@ export default function ElectionCardForParties({
       <div className="grid grid-cols-3 gap-4">
         {/* Tipo */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg">
             <FileText className="text-[#0f366d]" size={24} />
           </div>
           <div>
@@ -57,7 +57,7 @@ export default function ElectionCardForParties({
 
         {/* Categorías */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg">
             <BarChart3 className="text-[#0f366d]" size={24} />
           </div>
           <div>
@@ -70,7 +70,7 @@ export default function ElectionCardForParties({
 
         {/* Período */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg">
             <Calendar className="text-[#0f366d]" size={24} />
           </div>
           <div>

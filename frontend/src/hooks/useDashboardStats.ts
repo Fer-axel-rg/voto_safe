@@ -4,7 +4,6 @@ import type { DashboardStats } from '@/types/dashboard.types';
 
 const API_URL = 'http://localhost:8080/api/v1/dashboard/summary';
 
-// Estado inicial vacío para que no rompa la UI mientras carga
 const INITIAL_STATS: DashboardStats = {
   adminName: 'Cargando...',
   activeElectionsCount: 0,
@@ -15,39 +14,42 @@ const INITIAL_STATS: DashboardStats = {
 };
 
 export const useDashboardStats = () => {
-  const { token, logout } = useAuth(); // Necesitamos el token del usuario logueado
+  const { token, logout } = useAuth();
   const [stats, setStats] = useState<DashboardStats>(INITIAL_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ⚠️ CLAVE: Usamos useCallback para que la función sea estable
   const fetchStats = useCallback(async () => {
-    // Si no hay token, no intentamos llamar (probablemente no está logueado)
     if (!token) {
         setLoading(false);
         return;
     }
 
+    // Evitamos llamar si ya estamos cargando (opcional, pero buena práctica)
+    // setLoading(true); // <-- A VECES ESTO CAUSA EL BUCLE SI ESTÁ MAL PUESTO
+
     try {
-      setLoading(true);
       const response = await fetch(API_URL, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token // IMPORTANTE: Enviamos el token a Java
+          'Authorization': token 
         }
       });
 
       if (response.status === 401 || response.status === 403) {
-        // Si el token venció o es inválido
         logout();
         throw new Error("Sesión expirada");
       }
 
       if (!response.ok) {
-        throw new Error('Error al cargar datos del dashboard');
+        throw new Error('Error al cargar datos');
       }
 
       const data: DashboardStats = await response.json();
+      
+      // Solo actualizamos si los datos son diferentes (o simplemente confiamos en React)
       setStats(data);
       setError(null);
 
@@ -57,11 +59,18 @@ export const useDashboardStats = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, logout]);
+  }, [token, logout]); // Solo se recrea si cambia el token
 
+  // ⚠️ CLAVE 2: El useEffect solo depende de fetchStats
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    let isMounted = true;
+
+    if(isMounted) {
+        fetchStats();
+    }
+
+    return () => { isMounted = false; };
+  }, []); 
 
   return { stats, loading, error, refreshStats: fetchStats };
 };

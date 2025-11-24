@@ -1,332 +1,258 @@
-// src/pages/admin/Statistics/StatisticsPage.tsx
-import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, MapPin, BarChart3, PieChart as PieIcon,
-  Users, Calendar, CheckCircle2, BrainCircuit, TrendingUp,
-  Zap, Lightbulb, Target, Trophy, Clock, Search, ShieldCheck
+  ChevronDown, MapPin, BarChart3, 
+  Users, Calendar, CheckCircle2, BrainCircuit,
+  Zap, Lightbulb, Target, Trophy, Clock, ShieldCheck
 } from 'lucide-react';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { Gauge } from '@mui/x-charts/Gauge';
 
+import { useStatistics } from '@/hooks/useStatistics';
 
-// --- INTERFACES ---
-interface UserData {
-  DNI: string;
-  Nombres: string;
-  Apellidos: string;
-  Departamento: string;
-  Estado: 'voto' | 'no voto';
-}
-
-interface Party {
-  id: string;
-  name: string;
-  color?: string;
-  logoUrl?: string;
-}
-
-interface Election {
-  id: string;
-  name: string;
-  status: string;
-  type: string;
-  endDate: string;
-}
-
-const StatisticsPage = () => {
+export default function StatisticsPage() {
   const { id_dashbord } = useParams();
-  // --- ESTADOS DE UI ---
+  const navigate = useNavigate();
+
+  // Estados de UI
+  const [activeTab, setActiveTab] = useState<'statistics' | 'predictions'>('statistics');
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>('');
   const [isDepartamentoOpen, setIsDepartamentoOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'statistics' | 'predictions'>('statistics');
+  const [isElectionMenuOpen, setIsElectionMenuOpen] = useState(false);
 
-  // --- DATOS ---
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [parties, setParties] = useState<Party[]>([]);
-  const [allElections, setAllElections] = useState<Election[]>([]);
-  const [selectedElectionId, setSelectedElectionId] = useState<string>(id_dashbord || '');
+  // Conexión al Backend
+  const { results, electionsList, loading } = useStatistics(id_dashbord);
 
-  // 1. CARGAR DATOS
-  useEffect(() => {
-    loadData();
-    window.addEventListener('storage', loadData);
-    return () => window.removeEventListener('storage', loadData);
-  }, []);
-
-  const loadData = () => {
-    try {
-      const uData = localStorage.getItem('usuariosData');
-      if (uData) setUsers(JSON.parse(uData));
-
-      const pData = localStorage.getItem('votosafe_parties');
-      if (pData) setParties(JSON.parse(pData));
-      else setParties([{ id: 'p1', name: 'Partido A', color: '#FF6384' }, { id: 'p2', name: 'Partido B', color: '#36A2EB' }]);
-
-      const eData = localStorage.getItem('votosafe_elections');
-      if (eData) {
-        const elections: Election[] = JSON.parse(eData);
-        setAllElections(elections);
-        if (!id_dashbord && !selectedElectionId && elections.length > 0) {
-          const active = elections.find(e => e.status === 'active');
-          setSelectedElectionId(active ? active.id : elections[0].id);
-          console.log(setSelectedElectionId);
-        }
-      }
-    } catch (error) {
-      console.error("Error cargando localstorage:", error);
-    }
+  const handleElectionChange = (newId: string) => {
+      navigate(`/admin/statistics/${newId}`);
+      setIsElectionMenuOpen(false);
   };
 
-  const currentElection = allElections.find(e => e.id === selectedElectionId);
+  const currentElectionName = electionsList.find(e => e.id === id_dashbord)?.name || "Seleccionar Elección";
 
+  // 1. Adaptar datos para gráficos
+  const chartData = useMemo(() => {
+      if (!results) return [];
+      return results.results.map(r => ({
+          id: r.partyName, 
+          name: r.partyName,
+          votes: r.votes,
+          percentage: r.percentage,
+          color: r.color || '#ccc',
+          logoUrl: r.partyLogo
+      })).sort((a, b) => b.percentage - a.percentage);
+  }, [results]);
 
-  // --- CÁLCULOS ESTADÍSTICOS (Simulados) ---
-  const stats = useMemo(() => {
-    let filteredUsers = users;
-    if (selectedDepartamento) {
-      filteredUsers = users.filter(u => u.Departamento === selectedDepartamento);
-    }
+  const pieData = chartData.map((c, i) => ({ 
+      id: i, 
+      value: c.percentage, 
+      label: `${c.name} (${c.percentage}%)`, 
+      color: c.color 
+  }));
 
-    const totalHabilitados = filteredUsers.length;
-    const usuariosQueVotaron = filteredUsers.filter(u => u.Estado === 'voto');
-    const totalVotos = usuariosQueVotaron.length;
-    const participacionPct = totalHabilitados > 0 ? Math.round((totalVotos / totalHabilitados) * 100) : 0;
+  const departamentos = ["Lima", "Arequipa", "Cusco", "La Libertad", "Piura", "Junín"];
 
-    const results: Record<string, number> = {};
-    parties.forEach(p => results[p.id] = 0);
-    const electionSeed = selectedElectionId ? selectedElectionId.charCodeAt(0) : 0;
-
-    usuariosQueVotaron.forEach(user => {
-      if (parties.length > 0) {
-        const dniNum = parseInt(user.DNI.replace(/\D/g, '')) || 0;
-        const partyIndex = (dniNum + electionSeed) % parties.length;
-        const assignedPartyId = parties[partyIndex].id;
-        results[assignedPartyId]++;
-      }
-    });
-
-    const chartData = parties.map(party => {
-      const votes = results[party.id] || 0;
-      const percentage = totalVotos > 0 ? Math.round((votes / totalVotos) * 100) : 0;
-      const fallbackColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
-      return {
-        id: party.id, name: party.name, votes, percentage, color: party.color || fallbackColor, logoUrl: party.logoUrl
-      };
-    }).sort((a, b) => b.percentage - a.percentage);
-
-    return { totalHabilitados, totalVotos, participacionPct, chartData };
-  }, [users, parties, selectedDepartamento, selectedElectionId]);
-
-  // --- DATOS SIMULADOS PARA PREDICCIONES ---
+  // 2. PREDICCIONES (Corregido: Sin Math.random)
   const predictionData = useMemo(() => {
-    if (!stats.chartData.length) return null;
+    if (!chartData.length || !results) return null;
 
-    const top1 = stats.chartData[0];
-    const top2 = stats.chartData[1] || { name: 'Otro', color: '#ccc' };
-    const top3 = stats.chartData[2] || { name: 'Otro más', color: '#eee' };
-
-    const winnerConfidence = Math.min(top1.percentage + Math.round(Math.random() * 5 + 5), 100);
-    const predictedMargin = (winnerConfidence - (top2.percentage + Math.round(Math.random() * 3))).toFixed(1);
-
+    const top1 = chartData[0];
+    const top2 = chartData[1] || { name: 'Otros', percentage: 0, color: '#ccc', votes: 0 };
+    
+    // Calculamos margen real
+    const realMargin = (top1.percentage - top2.percentage);
+    
+    // CORRECCIÓN: Proyección determinista (En vez de random, sumamos un fijo 1.2% de tendencia)
+    const predictedMargin = Math.max(realMargin + 1.2, 0).toFixed(1);
+    
     const projectionHours = ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00 (Cierre)'];
-    const top1Actual = [10, 25, 45, 60, 80];
-    const top2Actual = [8, 20, 35, 45, 55];
-
+    
+    // Curva basada en datos reales (determinista)
+    const top1Curve = [
+        top1.percentage * 0.4, 
+        top1.percentage * 0.6, 
+        top1.percentage * 0.8, 
+        top1.percentage
+    ];
+    
     return {
       winner: top1,
-      predictedWinnerPercentage: winnerConfidence,
+      predictedWinnerPercentage: Math.min(top1.percentage + 2.5, 100), // Proyección +2.5%
       predictedMargin: predictedMargin,
 
       projectionLineChart: {
-        xAxis: [{ data: projectionHours, scaleType: 'point' as const }],
+        xAxis: [{ data: projectionHours.slice(0, 4), scaleType: 'point' as const }],
         series: [
-          {
-            label: `Actual: ${top1.name}`,
-            data: top1Actual.concat(winnerConfidence),
-            color: top1.color,
-            showMark: true,
-            disableHighlight: true,
+          { 
+            label: `Actual: ${top1.name}`, 
+            data: top1Curve, 
+            color: top1.color, 
+            showMark: true 
           },
-          {
-            label: `Actual: ${top2.name}`,
-            data: top2Actual.concat(top2.percentage + Math.round(Math.random() * 3)),
-            color: top2.color,
-            showMark: true,
-            disableHighlight: true,
-          },
-          {
-            label: `IA Proyección: ${top1.name}`,
-            data: top1Actual.map(() => NaN).concat(winnerConfidence),
-            color: top1.color,
-            lineStyle: { strokeDasharray: '5 5' },
-            showMark: true,
+          { 
+            label: `IA Proyección`, 
+            // Proyección lineal simple sin random
+            data: [null, null, null, top1.percentage, Math.min(top1.percentage + 2.5, 100)], 
+            color: top1.color, 
+            lineStyle: { strokeDasharray: '5 5' } 
           }
         ]
       },
 
-      winProbabilityBarChart: stats.chartData.slice(0, 3).map(c => ({
+      winProbabilityBarChart: chartData.slice(0, 3).map(c => ({
         name: c.name,
-        probability: Math.min(c.percentage + (c.id === top1.id ? 10 : Math.random() * 3), 100),
+        // Lógica determinista: Si tiene más de 50%, probabilidad 99%, sino +15%
+        probability: c.percentage > 50 ? 99 : Math.min(c.percentage + 15, 90),
         color: c.color
-      })).sort((a, b) => b.probability - a.probability),
+      })),
 
       participationLineChart: {
-        xAxis: [{ data: projectionHours.slice(0, 5).concat('Cierre (Pred)'), scaleType: 'point' as const }],
+        xAxis: [{ data: ['Apertura', 'Mediodía', 'Actual', 'Cierre (Est.)'], scaleType: 'point' as const }],
         series: [
-          {
-            label: 'Participación Actual',
-            data: [5, 15, 30, 45, 60, stats.participacionPct + 15],
-            color: '#8884d8',
-            area: true,
-            showMark: true
-          },
-          {
-            label: 'Pronóstico IA',
-            data: [NaN, NaN, NaN, NaN, 60, stats.participacionPct + 15],
-            color: '#6a0dad',
-            lineStyle: { strokeDasharray: '3 3' },
-            showMark: true
+          { 
+            label: 'Participación', 
+            // Datos fijos para la curva histórica + proyección del 10% extra al cierre
+            data: [5, results.participationPercentage * 0.6, results.participationPercentage, Math.min(results.participationPercentage + 10, 100)], 
+            color: '#8884d8', 
+            area: true 
           }
         ]
       },
 
-      undecidedVoterImpact: Math.round(Math.random() * 30) + 70
+      undecidedVoterImpact: ((100 - results.participationPercentage) * 0.2).toFixed(1) // 20% del ausentismo
     };
-  }, [stats]);
+  }, [chartData, results]);
 
-
-  const departamentos = Array.from(new Set(users.map(u => u.Departamento))).sort();
-  const barData = stats.chartData.map(c => ({ name: c.name, percentage: c.percentage }));
-  const pieData = stats.chartData.map((c, i) => ({ id: i, value: c.percentage, label: `${c.name} (${c.percentage}%)`, color: c.color }));
+  // --- RENDERIZADO ---
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-10">
+    <div className="min-h-screen p-6 bg-gray-50 md:p-10 animate-fadeIn">
 
-      {/* HEADER PRINCIPAL */}
+      {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Panel De Estadísticas</h1>
-        <p className="text-gray-500">Análisis y proyección de datos electorales</p>
+        <p className="text-gray-500">Análisis en tiempo real</p>
       </div>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-gray-200 pb-1">
-
-        {/* TABS HORIZONTALES */}
+      <div className="flex flex-col justify-between gap-4 pb-1 mb-8 border-b border-gray-200 md:flex-row md:items-center">
+        {/* TABS */}
         <div className="flex gap-6">
-          <button
-            onClick={() => setActiveTab('statistics')}
-            className={`flex items-center gap-2 pb-3 px-1 font-bold text-sm transition-all duration-200 relative
-                    ${activeTab === 'statistics' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            <BarChart3 size={18} />
-            GRÁFICOS ESTADÍSTICOS
-            {activeTab === 'statistics' && (
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-t-full animate-fadeIn" />
-            )}
+          <button onClick={() => setActiveTab('statistics')} className={`flex items-center gap-2 pb-3 px-1 font-bold text-sm transition-all duration-200 relative ${activeTab === 'statistics' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <BarChart3 size={18} /> GRÁFICOS ESTADÍSTICOS
+            {activeTab === 'statistics' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-t-full animate-fadeIn" />}
           </button>
-
-          <button
-            onClick={() => setActiveTab('predictions')}
-            className={`flex items-center gap-2 pb-3 px-1 font-bold text-sm transition-all duration-200 relative
-                    ${activeTab === 'predictions' ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            <BrainCircuit size={18} />
-            PREDICCIONES (IA)
-            {activeTab === 'predictions' && (
-              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-600 rounded-t-full animate-fadeIn" />
-            )}
+          <button onClick={() => setActiveTab('predictions')} className={`flex items-center gap-2 pb-3 px-1 font-bold text-sm transition-all duration-200 relative ${activeTab === 'predictions' ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}>
+            <BrainCircuit size={18} /> PREDICCIONES (IA)
+            {activeTab === 'predictions' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-600 rounded-t-full animate-fadeIn" />}
           </button>
         </div>
 
         {/* SELECTOR DE ELECCIÓN */}
-        <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition-colors">
-          <Calendar size={16} className="text-gray-400 mr-2" />
-          <select
-            value={selectedElectionId}
-            onChange={(e) => setSelectedElectionId(e.target.value)}
-            className="bg-transparent text-sm font-semibold text-gray-700 outline-none cursor-pointer min-w-[180px]"
-          >
-            <option value="" disabled>Seleccionar Elección...</option>
-            {allElections.map(election => (
-              <option key={election.id} value={election.id}>
-                {election.name}
-              </option>
-            ))}
-          </select>
+        <div className="relative">
+           <button 
+             onClick={() => setIsElectionMenuOpen(!isElectionMenuOpen)}
+             className="flex items-center justify-between bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm hover:border-blue-300 transition-all min-w-[250px]"
+           >
+              <div className="flex items-center gap-2">
+                 <Calendar size={16} className="text-blue-600" />
+                 <span className="text-sm font-semibold text-gray-700">{currentElectionName}</span>
+              </div>
+              <ChevronDown size={16} className="text-gray-400" />
+           </button>
+
+           {isElectionMenuOpen && (
+             <div className="absolute right-0 z-50 w-full mt-2 overflow-hidden duration-200 bg-white border border-gray-100 shadow-xl top-full rounded-xl animate-in fade-in zoom-in-95">
+                {electionsList.map(election => (
+                   <button
+                     key={election.id}
+                     onClick={() => handleElectionChange(election.id)}
+                     className="w-full px-4 py-3 text-sm text-left text-gray-700 transition-colors border-b hover:bg-blue-50 hover:text-blue-700 last:border-0"
+                   >
+                      {election.name}
+                   </button>
+                ))}
+             </div>
+           )}
         </div>
       </div>
 
-
-      {/* CONTENIDO DINÁMICO */}
-      {!currentElection ? (
-        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-sm border border-gray-200">
-          <Calendar className="text-gray-300 w-16 h-16 mb-4" />
-          <p className="text-gray-500 font-medium">Selecciona una elección arriba para comenzar</p>
+      {/* CONTENIDO */}
+      {!results ? (
+        <div className="flex flex-col items-center justify-center h-64 bg-white border border-gray-200 shadow-sm rounded-2xl">
+            {loading ? (
+               <div className="flex flex-col items-center gap-3">
+                   <div className="w-8 h-8 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                   <p className="text-sm font-medium text-gray-500">Cargando datos...</p>
+               </div>
+            ) : (
+               <p className="font-medium text-gray-500">Selecciona una elección para ver los resultados.</p>
+            )}
         </div>
       ) : (
         <>
           {/* VISTA 1: GRÁFICOS ESTADÍSTICOS */}
           {activeTab === 'statistics' && (
-            <div className="animate-fadeIn space-y-8">
-
-              {/* TARJETAS KPI */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-2 border-blue-500 flex items-center justify-between">
+            <div className="space-y-8 animate-fadeIn">
+              
+              {/* KPI CARDS */}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="flex items-center justify-between p-6 bg-white border-2 border-l-4 border-blue-500 shadow-sm rounded-2xl">
                   <div>
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Padrón Electoral</p>
-                    <h2 className="text-2xl font-black text-gray-800 mt-1">{stats.totalHabilitados.toLocaleString()}</h2>
-                    <p className="text-xs text-gray-400 mt-1">{selectedDepartamento || 'Nacional'}</p>
+                    <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">Padrón Electoral</p>
+                    <h2 className="mt-1 text-2xl font-black text-gray-800">{results.totalVoters.toLocaleString()}</h2>
+                    <p className="mt-1 text-xs text-gray-400">{selectedDepartamento || 'Nacional'}</p>
                   </div>
-                  <div className="bg-blue-50 p-3 rounded-full text-blue-600"><Users size={20} /></div>
+                  <div className="p-3 text-blue-600 rounded-full bg-blue-50"><Users size={20} /></div>
                 </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-2 border-green-500 flex items-center justify-between">
+                <div className="flex items-center justify-between p-6 bg-white border-2 border-l-4 border-green-500 shadow-sm rounded-2xl">
                   <div>
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Votos Recibidos</p>
-                    <h2 className="text-2xl font-black text-gray-800 mt-1">{stats.totalVotos.toLocaleString()}</h2>
-                    <p className="text-xs text-green-600 font-bold mt-1">100% procesado</p>
+                    <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">Votos Recibidos</p>
+                    <h2 className="mt-1 text-2xl font-black text-gray-800">{results.totalVotes.toLocaleString()}</h2>
                   </div>
-                  <div className="bg-green-50 p-3 rounded-full text-green-600"><CheckCircle2 size={20} /></div>
+                  <div className="p-3 text-green-600 rounded-full bg-green-50"><CheckCircle2 size={20} /></div>
                 </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-2 border-purple-500 flex items-center justify-between">
+                <div className="flex items-center justify-between p-6 bg-white border-2 border-l-4 border-purple-500 shadow-sm rounded-2xl">
                   <div>
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Participación</p>
-                    <h2 className="text-2xl font-black text-gray-800 mt-1">{stats.participacionPct}%</h2>
+                    <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">Participación</p>
+                    <h2 className="mt-1 text-2xl font-black text-gray-800">{results.participationPercentage}%</h2>
                     <div className="w-20 h-1.5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-                      <div className="bg-purple-500 h-full transition-all duration-1000" style={{ width: `${stats.participacionPct}%` }}></div>
+                      <div className="h-full transition-all duration-1000 bg-purple-500" style={{ width: `${results.participationPercentage}%` }}></div>
                     </div>
                   </div>
-                  <div className="bg-purple-50 p-3 rounded-full text-purple-600"><BarChart3 size={20} /></div>
+                  <div className="p-3 text-purple-600 rounded-full bg-purple-50"><BarChart3 size={20} /></div>
                 </div>
               </div>
 
               {/* GRID GRÁFICOS */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {stats.chartData.slice(0, 4).map((c) => (
-                      <div key={c.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center hover:shadow-md transition-shadow">
-                        <div className="w-10 h-10 mx-auto rounded-full mb-2 flex items-center justify-center text-white font-bold shadow-sm" style={{ backgroundColor: c.color }}>
-                          {c.logoUrl ? <img src={c.logoUrl} className="w-full h-full rounded-full object-contain" /> : c.name.substring(0, 1)}
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <div className="space-y-8 lg:col-span-2">
+                   {/* Mini Tarjetas */}
+                   <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    {chartData.slice(0, 4).map((c, i) => (
+                      <div key={i} className="p-4 text-center transition-shadow bg-white border border-gray-200 shadow-sm rounded-xl hover:shadow-md">
+                        <div className="flex items-center justify-center w-10 h-10 mx-auto mb-2 overflow-hidden font-bold text-white bg-gray-100 rounded-full shadow-sm" style={{ backgroundColor: c.color }}>
+                          {c.logoUrl ? <img src={c.logoUrl} className="object-cover w-full h-full" /> : c.name.substring(0, 1)}
                         </div>
-                        <h4 className="font-bold text-gray-700 text-xs truncate">{c.name}</h4>
+                        <h4 className="text-xs font-bold text-gray-700 truncate">{c.name}</h4>
                         <p className="text-lg font-black text-gray-900">{c.percentage}%</p>
                       </div>
                     ))}
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold text-gray-700 mb-4 text-sm">Resultados Generales - {currentElection.name}</h3>
+                   </div>
+                   
+                   {/* Gráfico Barras */}
+                   <div className="p-6 bg-white border border-gray-100 shadow-sm rounded-2xl">
+                    <h3 className="mb-4 text-sm font-bold text-gray-700">Resultados Generales</h3>
                     <div className="h-[300px] w-full">
                       <BarChart
-                        dataset={barData}
+                        dataset={chartData}
                         yAxis={[{ scaleType: 'band', dataKey: 'name' }]}
                         series={[{ dataKey: 'percentage', valueFormatter: (v) => `${v}%`, color: '#3B82F6' }]}
                         layout="horizontal"
                         margin={{ left: 100 }}
                         borderRadius={4}
-                        colors={stats.chartData.map(c => c.color)}
-                        slotProps={{ legend: { hidden: true } }}
+                        colors={chartData.map(c => c.color)}
+                        slotProps={{ legend: { hidden: true } as any }}
                       />
                     </div>
                   </div>
@@ -334,36 +260,53 @@ const StatisticsPage = () => {
 
                 {/* Sidebar Derecha */}
                 <div className="space-y-8">
-                  {/* Filtro - CORREGIDO AQUÍ */}
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg relative">
-                    <MapPin className="absolute -right-4 -bottom-4 text-white opacity-10 w-32 h-32" />
-                    <h3 className="font-bold text-sm mb-4 relative z-10 uppercase tracking-widest opacity-90">Filtro Regional</h3>
-                    <div className="relative z-[100]">
-                      <button onClick={() => setIsDepartamentoOpen(!isDepartamentoOpen)} className="w-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold py-3 px-4 rounded-xl flex justify-between items-center hover:bg-white/20 transition-all">
+                   {/* Filtro Regional (CORREGIDO Z-INDEX) */}
+                   <div className="relative z-50 p-6 text-white shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl">
+                    <MapPin className="absolute w-32 h-32 text-white pointer-events-none -right-4 -bottom-4 opacity-10" />
+                    <h3 className="relative z-10 mb-4 text-sm font-bold tracking-widest uppercase opacity-90">Filtro Regional</h3>
+                    
+                    <div className="relative z-50"> {/* Z-Index alto para el contenedor del botón */}
+                      <button 
+                        onClick={() => setIsDepartamentoOpen(!isDepartamentoOpen)} 
+                        className="flex items-center justify-between w-full px-4 py-3 font-semibold text-white transition-all border bg-white/10 backdrop-blur-sm border-white/20 rounded-xl hover:bg-white/20"
+                      >
                         {selectedDepartamento || 'Todo el País'}
                         <ChevronDown size={18} />
                       </button>
+
+                      {/* Menú Desplegable (Z-Index Extremo) */}
                       {isDepartamentoOpen && (
                         <div className="absolute top-full mt-2 left-0 w-full bg-white text-gray-800 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-[100] animate-in fade-in zoom-in-95 duration-200">
-                          <button onClick={() => { setSelectedDepartamento(''); setIsDepartamentoOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600 border-b text-sm">Nacional</button>
+                          <button 
+                            onClick={() => { setSelectedDepartamento(''); setIsDepartamentoOpen(false); }} 
+                            className="w-full px-4 py-3 text-sm font-bold text-left text-blue-600 border-b hover:bg-blue-50"
+                          >
+                            Nacional
+                          </button>
                           {departamentos.map(dep => (
-                            <button key={dep} onClick={() => { setSelectedDepartamento(dep); setIsDepartamentoOpen(false); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 border-b last:border-0 text-sm">{dep}</button>
+                            <button 
+                                key={dep} 
+                                onClick={() => { setSelectedDepartamento(dep); setIsDepartamentoOpen(false); }} 
+                                className="w-full px-4 py-2 text-sm text-left text-gray-700 border-b hover:bg-gray-50 last:border-0"
+                            >
+                                {dep}
+                            </button>
                           ))}
                         </div>
                       )}
                     </div>
-                  </div>
+                   </div>
 
-                  {/* Pie Chart */}
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-                    <h3 className="font-bold text-gray-700 mb-4 self-start text-sm">Distribución</h3>
+                   {/* Pie Chart */}
+                   <div className="flex flex-col items-center p-6 bg-white border border-gray-100 shadow-sm rounded-2xl">
+                    <h3 className="self-start mb-4 text-sm font-bold text-gray-700">Distribución</h3>
                     <PieChart
                       series={[{ data: pieData, innerRadius: 40, outerRadius: 80, paddingAngle: 2, cornerRadius: 4 }]}
-                      width={250} height={200} slotProps={{ legend: { hidden: true } }}
+                      width={250} height={200} slotProps={{ legend: { hidden: true } as any }}
                     />
-                    <div className="mt-4 w-full space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                      {stats.chartData.map(c => (
-                        <div key={c.id} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
+                    <div className="w-full pr-1 mt-4 space-y-2 overflow-y-auto max-h-48 custom-scrollbar">
+                      {chartData.map((c, i) => (
+                        <div key={i} className="flex items-center justify-between py-1 text-xs border-b border-gray-50 last:border-0">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }}></div>
                             <span className="font-medium text-gray-600 truncate max-w-[120px]">{c.name}</span>
@@ -380,155 +323,92 @@ const StatisticsPage = () => {
 
           {/* VISTA 2: PREDICCIONES */}
           {activeTab === 'predictions' && predictionData && (
-            <div className="animate-fadeIn space-y-8">
-
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <BrainCircuit className="text-purple-600" />
-                    Análisis Predictivo Avanzado
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Proyecciones en tiempo real para {currentElection.name} ({currentElection.type})
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 bg-purple-100 px-3 py-1 rounded-full text-purple-700 text-xs font-bold border border-purple-200">
-                  <Zap size={14} fill="currentColor" />
-                  Modelo Activo v3.1 (TensorFlow)
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-400 border-l-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Trophy className="text-purple-600" size={20} />
-                    <p className="text-xs font-bold uppercase text-gray-500 tracking-wider">Ganador Proyectado</p>
-                  </div>
-                  <h3 className="text-2xl font-black text-gray-800 flex items-baseline gap-2">
-                    {predictionData.winner.name}
-                    <span className="text-purple-600 text-lg font-bold">({predictionData.predictedWinnerPercentage.toFixed(1)}%)</span>
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-1">Confiabilidad del modelo: 95%</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-400 border-l-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Target className="text-blue-600" size={20} />
-                    <p className="text-xs font-bold uppercase text-gray-500 tracking-wider">Margen de Victoria</p>
-                  </div>
-                  <h3 className="text-2xl font-black text-gray-800">
-                    {predictionData.predictedMargin}%
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-1">Sobre el segundo candidato</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-green-400 border-l-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Users className="text-green-600" size={20} />
-                    <p className="text-xs font-bold uppercase text-gray-500 tracking-wider">Participación Final</p>
-                  </div>
-                  <h3 className="text-2xl font-black text-gray-800">
-                    {predictionData.participationLineChart.series[0].data.slice(-1)[0].toFixed(1)}%
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-1">Pronóstico al cierre de urnas</p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-amber-400 border-l-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Lightbulb className="text-amber-600" size={20} />
-                    <p className="text-xs font-bold uppercase text-gray-500 tracking-wider">Impacto Voto Indeciso</p>
-                  </div>
-                  <h3 className="text-2xl font-black text-gray-800">
-                    {predictionData.undecidedVoterImpact}%
-                  </h3>
-                  <p className="text-xs text-gray-400 mt-1">Potencial de cambio en resultados</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
-
-                <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-950/50">
-                  <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
-                    <Clock size={18} className="text-blue-600" /> Proyección de Votos por Hora
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-6">
-                    Evolución del % de votos. La línea discontinua es la predicción de la IA para el cierre.
-                  </p>
-
-                  <div className="h-[300px] w-full">
-                    <LineChart
-                      xAxis={predictionData.projectionLineChart.xAxis}
-                      series={predictionData.projectionLineChart.series}
-                      margin={{ left: 50, right: 20, top: 20, bottom: 30 }}
-                      grid={{ vertical: true, horizontal: true }}
-                      slotProps={{
-                        legend: {
-                          hidden: false,
-                          position: { vertical: 'top', horizontal: 'right' },
-                          itemMarkWidth: 10,
-                          itemMarkHeight: 10,
-                          labelStyle: { fontSize: 12 }
-                        }
-                      }}
-                    />
-                  </div>
+             <div className="space-y-8 animate-fadeIn">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 className="flex items-center gap-2 text-xl font-bold text-gray-800"><BrainCircuit className="text-purple-600" /> Análisis Predictivo</h2>
+                        <p className="mt-1 text-sm text-gray-500">Proyecciones basadas en tendencias actuales</p>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-1 text-xs font-bold text-purple-700 bg-purple-100 border border-purple-200 rounded-full">
+                        <Zap size={14} fill="currentColor" /> Modelo v3.1
+                    </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-950/50">
-                  <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
-                    <ShieldCheck size={18} className="text-green-600" /> Probabilidad de Victoria
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-6">
-                    Predicción de la IA basada en el flujo actual y modelos de regresión.
-                  </p>
-
-                  <div className="h-[300px] w-full">
-                    <BarChart
-                      dataset={predictionData.winProbabilityBarChart}
-                      yAxis={[{ scaleType: 'band', dataKey: 'name' }]}
-                      series={[{
-                        dataKey: 'probability',
-                        label: 'Probabilidad (%)',
-                        color: '#6a0dad',
-                        valueFormatter: (v) => `${v.toFixed(1)}%`
-                      }]}
-                      layout="horizontal"
-                      margin={{ left: 100, right: 20, top: 20, bottom: 30 }}
-                      borderRadius={6}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="p-6 bg-white border border-l-4 border-purple-400 shadow-sm rounded-xl">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Trophy className="text-purple-600" size={20} />
+                            <p className="text-xs font-bold text-gray-500 uppercase">Ganador Proyectado</p>
+                        </div>
+                        <h3 className="flex items-baseline gap-2 text-2xl font-black text-gray-800">
+                            {predictionData.winner.name}
+                        </h3>
+                        <p className="mt-1 text-xs text-gray-400">Confiabilidad: Alta</p>
+                    </div>
+                    <div className="p-6 bg-white border border-l-4 border-blue-400 shadow-sm rounded-xl">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Target className="text-blue-600" size={20} />
+                            <p className="text-xs font-bold text-gray-500 uppercase">Margen de Victoria</p>
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-800">
+                            {predictionData.predictedMargin}%
+                        </h3>
+                    </div>
+                     <div className="p-6 bg-white border border-l-4 border-green-400 shadow-sm rounded-xl">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Users className="text-green-600" size={20} />
+                            <p className="text-xs font-bold text-gray-500 uppercase">Participación Final</p>
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-800">
+                            {results.participationPercentage}%
+                        </h3>
+                    </div>
+                    <div className="p-6 bg-white border border-l-4 shadow-sm rounded-xl border-amber-400">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Lightbulb className="text-amber-600" size={20} />
+                            <p className="text-xs font-bold text-gray-500 uppercase">Indecisos</p>
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-800">
+                            {predictionData.undecidedVoterImpact}%
+                        </h3>
+                    </div>
                 </div>
 
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border-2 border-blue-950/50">
-                  <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide flex items-center gap-2">
-                    <Users size={18} className="text-purple-600" /> Predicción de Participación Acumulada
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-6">
-                    Curva de participación actual vs. pronóstico del modelo de Machine Learning.
-                  </p>
-                  <div className="h-[250px] w-full">
-                    <LineChart
-                      xAxis={predictionData.participationLineChart.xAxis}
-                      series={predictionData.participationLineChart.series}
-                      margin={{ left: 50, right: 20, top: 20, bottom: 30 }}
-                      grid={{ vertical: true, horizontal: true }}
-                      slotProps={{
-                        legend: {
-                          hidden: false,
-                          position: { vertical: 'top', horizontal: 'right' },
-                          itemMarkWidth: 10,
-                          itemMarkHeight: 10,
-                          labelStyle: { fontSize: 12 }
-                        }
-                      }}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                    <div className="p-6 bg-white border-2 shadow-sm rounded-2xl border-blue-950/50">
+                        <h3 className="flex items-center gap-2 mb-2 text-sm font-bold tracking-wide text-gray-800 uppercase">
+                            <Clock size={18} className="text-blue-600" /> Proyección de Votos
+                        </h3>
+                        <div className="h-[300px] w-full">
+                             <LineChart
+                                xAxis={predictionData.projectionLineChart.xAxis}
+                                series={predictionData.projectionLineChart.series}
+                                margin={{ left: 50, right: 20, top: 20, bottom: 30 }}
+                                grid={{ vertical: true, horizontal: true }}
+                                slotProps={{ legend: { hidden: false, position: { vertical: 'top', horizontal: 'right' } } as any }}
+                             />
+                        </div>
+                    </div>
+                    
+                    <div className="p-6 bg-white border-2 shadow-sm rounded-2xl border-blue-950/50">
+                        <h3 className="flex items-center gap-2 mb-2 text-sm font-bold tracking-wide text-gray-800 uppercase">
+                             <ShieldCheck size={18} className="text-green-600" /> Probabilidad Victoria
+                        </h3>
+                        <div className="h-[300px] w-full">
+                             <BarChart
+                                dataset={predictionData.winProbabilityBarChart}
+                                yAxis={[{ scaleType: 'band', dataKey: 'name' }]}
+                                series={[{ dataKey: 'probability', color: '#6a0dad' }]}
+                                layout="horizontal"
+                                margin={{ left: 100 }}
+                             />
+                        </div>
+                    </div>
                 </div>
-
-              </div>
-            </div>
+             </div>
           )}
         </>
       )}
     </div>
   );
-};
-
-export default StatisticsPage;
+}

@@ -13,7 +13,7 @@ interface ElectionCardProps {
 export default function ElectionCard({ election, onDelete, onEdit }: ElectionCardProps) {
   const getStatusBadge = () => {
     const badges = {
-      finished: { label: "POR COMENZAR", color: "bg-red-500" },
+      finished: { label: "FINALIZADA", color: "bg-red-500" },
       active: { label: "ACTIVA", color: "bg-green-500" },
       upcoming: { label: "PRÓXIMAMENTE", color: "bg-blue-500" },
     };
@@ -30,7 +30,7 @@ export default function ElectionCard({ election, onDelete, onEdit }: ElectionCar
       </span>
 
       {/* Título */}
-      <h3 className="text-lg font-semibold text-gray-800 mb-4 pr-32 uppercase">
+      <h3 className="pr-32 mb-4 text-lg font-semibold text-gray-800 uppercase">
         {election.name}
       </h3>
 
@@ -38,7 +38,7 @@ export default function ElectionCard({ election, onDelete, onEdit }: ElectionCar
       <div className="grid grid-cols-3 gap-4 mb-6">
         {/* Tipo */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg">
             <FileText className="text-[#0f366d]" size={24} />
           </div>
           <div>
@@ -49,7 +49,7 @@ export default function ElectionCard({ election, onDelete, onEdit }: ElectionCar
 
         {/* Categorías */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg">
             <BarChart3 className="text-[#0f366d]" size={24} />
           </div>
           <div>
@@ -62,7 +62,7 @@ export default function ElectionCard({ election, onDelete, onEdit }: ElectionCar
 
         {/* Período */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-white rounded-lg">
             <Calendar className="text-[#0f366d]" size={24} />
           </div>
           <div>
@@ -78,14 +78,14 @@ export default function ElectionCard({ election, onDelete, onEdit }: ElectionCar
       <div className="flex gap-3">
         <button
           onClick={() => onDelete(election.id)}
-          className="flex items-center gap-2 px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+          className="flex items-center gap-2 px-6 py-2 text-white transition-colors bg-red-500 rounded-full hover:bg-red-600"
         >
           <Trash2 size={18} />
           ELIMINAR
         </button>
         <button
           onClick={() => onEdit(election)}
-          className="flex items-center gap-2 px-6 py-2 bg-gray-300 text-gray-700 rounded-full hover:bg-gray-400 transition-colors"
+          className="flex items-center gap-2 px-6 py-2 text-gray-700 transition-colors bg-gray-300 rounded-full hover:bg-gray-400"
         >
           <Edit size={18} />
           MODIFICAR

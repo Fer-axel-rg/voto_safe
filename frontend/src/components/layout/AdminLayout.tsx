@@ -16,13 +16,13 @@ export default function AdminLayout() {
 
   return (
     // h-[100dvh] ayuda en móviles para evitar saltos con la barra del navegador
-    <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
+    <div className="flex w-full h-screen overflow-hidden bg-gray-50">
 
       {/* --- OVERLAY (Fondo oscuro) --- */}
       {/* Z-40: Debajo del sidebar (Z-50) pero encima del contenido */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-40 transition-opacity bg-black/60 backdrop-blur-sm md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -33,11 +33,11 @@ export default function AdminLayout() {
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         md:relative md:translate-x-0 md:shadow-none
       `}>
-        <div className="h-full relative flex flex-col">
+        <div className="relative flex flex-col h-full">
           {/* Botón X para cerrar (Visible solo en móvil) */}
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="absolute top-2 right-2 p-2 text-white/70 hover:text-white md:hidden"
+            className="absolute p-2 top-2 right-2 text-white/70 hover:text-white md:hidden"
           >
             <X size={24} />
           </button>
@@ -50,31 +50,31 @@ export default function AdminLayout() {
       {/* --- CONTENIDO PRINCIPAL --- */}
       <div className="flex flex-col flex-1 w-full min-w-0">
         {/* Header */}
-        <header className="h-16 bg-white flex items-center justify-between px-4 border-b border-gray-200 shadow-sm z-10">
+        <header className="z-10 flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200 shadow-sm">
           <button
-            className="md:hidden p-2 -ml-2 text-blue-950 rounded-lg hover:bg-gray-100"
+            className="p-2 -ml-2 rounded-lg md:hidden text-blue-950 hover:bg-gray-100"
             onClick={() => setIsSidebarOpen(true)}
           >
             <Menu size={28} />
           </button>
 
-          <div className="flex-1 md:hidden text-center font-bold text-blue-950">
+          <div className="flex-1 font-bold text-center md:hidden text-blue-950">
             {/* Título opcional para móvil */}
             ONPE
           </div>
-          <div className="hidden md:block flex-1"></div>
+          <div className="flex-1 hidden md:block"></div>
 
           <button
-            className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-            onClick={() => navigate(ADMIN_ROUTES.BALLOTS)}
+            className="flex items-center gap-2 transition-opacity hover:opacity-70"
+            onClick={() => navigate('/')}
           >
-            <span className="hidden sm:block text-sm font-semibold font-poppins text-blue-950">ADMIN</span>
+            <span className="hidden text-sm font-semibold sm:block font-poppins text-blue-950">ADMIN</span>
             <UserCircle size={32} className="text-blue-950" />
           </button>
         </header>
 
         {/* Main - overflow-x-hidden previene el scroll horizontal no deseado */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 p-4 md:p-6">
+        <main className="flex-1 p-4 overflow-x-hidden overflow-y-auto bg-gray-50 md:p-6">
           <Outlet />
         </main>
       </div>

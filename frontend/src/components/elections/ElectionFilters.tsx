@@ -1,123 +1,56 @@
-//Panel de filtros lateral
-// src/components/elections/ElectionFilters.tsx
+import { useState } from "react";
+import { Search, Filter } from "lucide-react";
 
-import type { ElectionFilters as Filters } from "@/types/election.types";
-
-interface ElectionFiltersProps {
-  filters: Filters;
-  onFilterChange: (filters: Partial<Filters>) => void;
+// 👇 AQUÍ ESTABA EL ERROR: Faltaba el 'export'
+export interface ElectionFiltersState {
+  name: string;
+  status: string;
 }
 
-export default function ElectionFilters({ filters, onFilterChange }: ElectionFiltersProps) {
+interface Props {
+  onFilterChange: (filters: ElectionFiltersState) => void;
+}
+
+export default function ElectionFilters({ onFilterChange }: Props) {
+  const [filters, setFilters] = useState<ElectionFiltersState>({
+    name: "",
+    status: "all",
+  });
+
+  const handleChange = (key: keyof ElectionFiltersState, value: string) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
+  };
+
   return (
-    <div className="w-80 bg-[#eaf2fc] rounded-[30px] p-6 shadow-[0_4px_12px_rgba(182,187,211,0.3)] h-fit">
-      <h3 className="text-lg font-semibold text-gray-800 mb-6">Filtros</h3>
-
-      {/* Filtro Nombre */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Nombre:
-        </label>
-        <input
-          type="text"
-          value={filters.name}
-          onChange={(e) => onFilterChange({ name: e.target.value })}
-          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0f366d]"
-          placeholder="Buscar..."
-        />
-      </div>
-
-      {/* Filtro Tipo */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo:
-        </label>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="tipo"
-              checked={filters.type === 'Presidencial'}
-              onChange={() => onFilterChange({ type: 'Presidencial' })}
-              className="w-4 h-4 text-[#0f366d]"
-            />
-            <span className="text-sm">Presencial</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="tipo"
-              checked={filters.type === 'Municipal'}
-              onChange={() => onFilterChange({ type: 'Municipal' })}
-              className="w-4 h-4 text-[#0f366d]"
-            />
-            <span className="text-sm">Virtual</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="tipo"
-              checked={filters.type === 'Otros'}
-              onChange={() => onFilterChange({ type: 'Otros' })}
-              className="w-4 h-4 text-[#0f366d]"
-            />
-            <span className="text-sm">Virtual</span>
-          </label>
+    <div className="p-4 mb-6 bg-white border border-gray-100 shadow-sm rounded-xl animate-fadeIn">
+      <div className="flex flex-col items-center gap-4 md:flex-row">
+        
+        <div className="relative flex-1 w-full">
+          <Search className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" size={20} />
+          <input
+            type="text"
+            placeholder="Buscar elección..."
+            value={filters.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+          />
         </div>
-      </div>
 
-      {/* Filtro Estado */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Estado:
-        </label>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="estado"
-              checked={filters.status === 'active'}
-              onChange={() => onFilterChange({ status: 'active' })}
-              className="w-4 h-4 text-[#0f366d]"
-            />
-            <span className="text-sm">Activo</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="estado"
-              checked={filters.status === 'finished'}
-              onChange={() => onFilterChange({ status: 'finished' })}
-              className="w-4 h-4 text-[#0f366d]"
-            />
-            <span className="text-sm">Finalizado</span>
-          </label>
+        <div className="flex items-center w-full gap-2 md:w-auto">
+          <Filter size={20} className="text-gray-500" />
+          <select
+            value={filters.status}
+            onChange={(e) => handleChange("status", e.target.value)}
+            className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 md:w-48"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activa</option>
+            <option value="upcoming">Por Comenzar</option>
+            <option value="finished">Finalizada</option>
+          </select>
         </div>
-      </div>
-
-      {/* Filtro Período */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Período (desde):
-        </label>
-        <input
-          type="date"
-          value={filters.startDate}
-          onChange={(e) => onFilterChange({ startDate: e.target.value })}
-          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0f366d]"
-        />
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Período (hasta):
-        </label>
-        <input
-          type="date"
-          value={filters.endDate}
-          onChange={(e) => onFilterChange({ endDate: e.target.value })}
-          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0f366d]"
-        />
       </div>
     </div>
   );

@@ -1,398 +1,237 @@
-// ===============================================
-// File: src/pages/admin/Voters/VotersPage.tsx
-// ===============================================
-// src/pages/admin/Voters/VotersPage.tsx
 import { useState, useEffect } from 'react';
 import { Search, Filter, Download, Users } from 'lucide-react';
-
-// Tipos
-interface VoterFromStorage {
-  DNI: string;
-  Nombre: string;
-  Apellidos: string;
-  "Fecha Nac.": string;
-  Tipo: 'Admin' | 'User' ;
-  Departamento: string;
-  Estado: 'voto' | 'no voto';
-  "Eleccion": string;
-  
-}
+import { useVoters } from '@/hooks/useVoters'; 
 
 const VotersPage = () => {
-  const [voters, setVoters] = useState<VoterFromStorage[]>([]);
-  const [filteredVoters, setFilteredVoters] = useState<VoterFromStorage[]>([]);
+  // 1. Hook Conectado
+  const { voters, stats, loading, searchVoters } = useVoters();
 
-  // estados para filtros
-  const [searchTerm,setSearchTerm] = useState('');
+  // 2. Estados locales
+  const [searchTerm, setSearchTerm] = useState('');
   const [filterUserType, setFilterUserType] = useState<string>('all');
   const [filterVoteStatus, setFilterVoteStatus] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Paginacion
-  const [currentPage,setCurrentPage] = useState(1);
+  // 3. Paginación
+  const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
 
-  // cargar DATOS DEL LOCALSTORAGE
-  useEffect( () => {
-    const storedData = localStorage.getItem('usuariosData');
-
-    if(storedData) {
-      try{
-        const parsedData: VoterFromStorage[] = JSON.parse(storedData);
-        setVoters(parsedData);
-        setFilteredVoters(parsedData);
-        } catch (error) {
-          console.error('Error en el localstorage',error)
-        }
-     } else {
-      console.warn('Error al leer el LocalStorage ',console.error());
-     }
-
-
-  },[])
-
-  // 3 LOGICA DE FILTRADO (Actualizada a las nuevas claves)
+  // 4. Manejo de Búsqueda (Debounce)
   useEffect(() => {
-    let filtered = [...voters];
+    const timer = setTimeout(() => {
+      searchVoters(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, searchVoters]);
 
-    if(searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (v) => 
-          v.DNI.includes(term) ||
-          v.Nombres.toLowerCase().includes(term) ||
-          v.Apellidos.toLowerCase().includes(term)
-      );
+  // 5. Filtrado en Cliente
+  const filteredVoters = voters.filter((v) => {
+    const matchType = filterUserType === 'all' || v.tipo === filterUserType;
+    let matchStatus = true;
+    if (filterVoteStatus !== 'all') {
+      matchStatus = v.estado === filterVoteStatus;
     }
+    const matchDept = filterDepartment === 'all' || v.departamento === filterDepartment;
+    return matchType && matchStatus && matchDept;
+  });
 
-    if(filterUserType !== 'all') {
-      filtered = filtered.filter((v) => v.Tipo === filterUserType);
-      }
-    
-    if(filterVoteStatus !== 'all') {
-      filtered = filtered.filter((v) => v.Estado === filterVoteStatus);
-    }
-
-    if(filterDepartment !== 'all') {
-      filtered = filtered.filter((v) => v.Departamento === filterDepartment);
-    }
-
-    setFilteredVoters(filtered);
-    setCurrentPage(1);
-  }, [searchTerm, filterUserType, filterVoteStatus, filterDepartment,voters]);
-  
-  // PAGINACION LOGICA 
+  // --- CORRECCIÓN AQUÍ (Faltaba definir endIndex) ---
   const totalPages = Math.ceil(filteredVoters.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentVoters = filteredVoters.slice(startIndex,endIndex);
+  const endIndex = startIndex + ITEMS_PER_PAGE; // <--- ESTA LÍNEA FALTABA
+  const currentVoters = filteredVoters.slice(startIndex, endIndex);
 
-  const handlePreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1,1));
-  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1,totalPages));
+  const uniqueDepartaments = Array.from(new Set(voters.map(v => v.departamento))).sort();
 
-  // exportar CSV (Actualizado)
+  // Exportar CSV
   const handleExportCSV = () => {
-    const headers = ['DNI','Apellidos', 'Fecha Nac.', 'Tipo','Departamento','Estado','Eleccion'];
+    const headers = ['DNI','Nombres','Apellidos', 'Fecha Nac.', 'Tipo','Departamento','Estado','Eleccion'];
     const csvContent = [
       headers.join(','),
       ...filteredVoters.map((v) => [
-        v.DNI,
-        v.Nombre,
-        v.Apellidos,
-        v["Fecha Nac."],
-        v.Tipo,
-        v.Departamento,
-        v.Estado,
-        v["Eleccion"]
-      ].join(',')
-    ),
+        v.dni,
+        v.nombres,
+        v.apellidos,
+        v.fechaNacimiento,
+        v.tipo,
+        v.departamento,
+        v.estado,
+        v.eleccion
+      ].join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `votantes_local_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `votantes_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
-  // ESTADISTICAS 
-  const stats = {
-    total: voters.length,
-    voted: voters.filter((v) => v.Estado === 'voto').length,
-    notVoted: voters.filter((v) => v.Estado === 'no voto').length,
-    admins: voters.filter((v) => v.Tipo === 'admin').length,
-    users: voters.filter((v) => v.Tipo === 'user').length
-  };
-
-  const uniqueDepartaments = Array.from(new Set(voters.map(v => v.Departamento))).sort();
-
-
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl animate-fadeIn">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Lista de Usuarios Votantes
-            </h1>
+            <h1 className="mb-2 text-3xl font-bold text-gray-800">Lista de Usuarios Votantes</h1>
             <p className="text-gray-600">Gestiona y visualiza todos los votantes registrados</p>
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md"
-          >
-            <Download size={20} />
-            Exportar CSV
+          <button onClick={handleExportCSV} className="flex items-center gap-2 px-6 py-3 text-white transition-colors bg-green-600 rounded-lg shadow-md hover:bg-green-700">
+            <Download size={20} /> Exportar CSV
           </button>
         </div>
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Users size={20} />
-              <span className="text-sm font-medium opacity-90">Total</span>
-            </div>
-            <p className="text-3xl font-bold">{stats.total}</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium opacity-90">Votaron</span>
-            </div>
-            <p className="text-3xl font-bold">{stats.voted}</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium opacity-90">No Votaron</span>
-            </div>
-            <p className="text-3xl font-bold">{stats.notVoted}</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium opacity-90">Admins</span>
-            </div>
-            <p className="text-3xl font-bold">{stats.admins}</p>
-          </div>
-
-          <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-4 text-white shadow-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium opacity-90">Users</span>
-            </div>
-            <p className="text-3xl font-bold">{stats.users}</p>
-          </div>
-
+        {/* Tarjetas de Estadísticas */}
+        <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-5">
+          <StatCard color="blue" title="Total" value={stats.total} />
+          <StatCard color="green" title="Votaron" value={stats.votaron} />
+          <StatCard color="red" title="No Votaron" value={stats.noVotaron} />
+          <StatCard color="purple" title="Admins" value={stats.admins} />
+          <StatCard color="yellow" title="Users" value={stats.users} />
         </div>
 
-        {/* Búsqueda y Filtros */}
-        <div className="bg-white rounded-xl shadow-md p-4">
+        {/* Buscador y Filtros */}
+        <div className="p-4 bg-white shadow-md rounded-xl">
           <div className="flex gap-4 mb-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <div className="relative flex-1">
+              <Search className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" size={20} />
               <input
                 type="text"
                 placeholder="Buscar por DNI, nombre o apellido..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full py-3 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <Filter size={20} />
-              Filtros
+            <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 px-6 py-3 transition-colors bg-gray-100 rounded-lg hover:bg-gray-200">
+              <Filter size={20} /> Filtros
             </button>
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Usuario
-                </label>
-                <select
-                  value={filterUserType}
-                  onChange={(e) => setFilterUserType(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Todos</option>
-                  <option value="admin">Admin</option>
-                  <option value="user">User</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado de Voto
-                </label>
-                <select
-                  value={filterVoteStatus}
-                  onChange={(e) => setFilterVoteStatus(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Todos</option>
-                  <option value="voto">Votaron</option>
-                  <option value="no voto">No Votaron</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Departamento
-                </label>
-                <select
-                  value={filterDepartment}
-                  onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">Todos</option>
-                  {uniqueDepartaments.map((dep) => (
-                    <option key={dep} value={dep}>
-                      {dep}
-                    </option>
-                  ))}
-                </select>
-              </div>
+             <div className="grid grid-cols-1 gap-4 pt-4 border-t border-gray-200 md:grid-cols-3">
+               <div>
+                 <label className="block mb-2 text-sm font-medium text-gray-700">Tipo de Usuario</label>
+                 <select value={filterUserType} onChange={(e) => setFilterUserType(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                   <option value="all">Todos</option>
+                   <option value="admin">Admin</option>
+                   <option value="user">User</option>
+                 </select>
+               </div>
+               <div>
+                 <label className="block mb-2 text-sm font-medium text-gray-700">Estado de Voto</label>
+                 <select value={filterVoteStatus} onChange={(e) => setFilterVoteStatus(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                   <option value="all">Todos</option>
+                   <option value="voto">Votaron</option>
+                   <option value="no voto">No Votaron</option>
+                 </select>
+               </div>
+               <div>
+                 <label className="block mb-2 text-sm font-medium text-gray-700">Departamento</label>
+                 <select value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                   <option value="all">Todos</option>
+                   {uniqueDepartaments.map((dep) => (
+                      <option key={dep} value={dep}>{dep}</option>
+                   ))}
+                 </select>
+               </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  DNI
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Nombres
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Apellidos
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Fecha Nac.
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Departamento
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Elección
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentVoters.map((voter) => (
-                <tr key={voter.DNI} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {voter.DNI}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-black">
-                    {voter.Nombres}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {voter.Apellidos}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {new Date(voter['Fecha Nac.']).toLocaleDateString('es-PE')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        voter.Tipo === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : voter.Tipo === 'user'
-                          ? 'bg-indigo-100 text-indigo-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
-                    >
-                      {voter.Tipo}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {voter.Departamento}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        voter.Estado
-                          ? 'bg-green-100 text-green-800' 
-                          : voter.Estado ==='voto' 
-                          ? 'bg-red-100 text-red-800'
-                          : voter.Estado ==='no voto'
-                      }`}
-                    >
-                      {voter.Estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">
-                    {voter.Eleccion || 'ELECCION'}
-                  </td>
+      <div className="overflow-hidden bg-white shadow-md rounded-xl">
+        {loading ? (
+            <div className="p-10 text-center text-gray-500">Cargando datos...</div>
+        ) : (
+            <div className="overflow-x-auto">
+            <table className="w-full">
+                <thead className="border-b border-gray-200 bg-gray-50">
+                <tr>
+                    {['DNI', 'Nombres', 'Apellidos', 'Fecha Nac.', 'Tipo', 'Departamento', 'Estado', 'Elección'].map(h => (
+                        <th key={h} className="px-6 py-4 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">{h}</th>
+                    ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer con paginación */}
-        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-700">
-              Mostrando <span className="font-semibold">{startIndex + 1}</span> a{' '}
-              <span className="font-semibold">{Math.min(endIndex, filteredVoters.length)}</span> de{' '}
-              <span className="font-semibold">{filteredVoters.length}</span> votantes
-            </p>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                  currentPage === 1
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                Anterior
-              </button>
-              
-              <span className="text-sm text-gray-700 px-4">
-                Página <span className="font-semibold">{currentPage}</span> de{' '}
-                <span className="font-semibold">{totalPages}</span>
-              </span>
-              
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                  currentPage === totalPages
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                Siguiente
-              </button>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                {currentVoters.map((voter) => (
+                    <tr key={voter.dni} className="transition-colors hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">{voter.dni}</td>
+                    <td className="px-6 py-4 text-sm text-black whitespace-nowrap">{voter.nombres}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{voter.apellidos}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                        {voter.fechaNacimiento ? new Date(voter.fechaNacimiento).toLocaleDateString('es-PE') : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            voter.tipo === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                        {voter.tipo}
+                        </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{voter.departamento}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                            voter.estado === 'voto' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                        {voter.estado === 'voto' ? 'Votó' : 'No Votó'}
+                        </span>
+                    </td>
+                    <td className="max-w-xs px-6 py-4 text-sm text-gray-700 truncate">
+                        {voter.estado === 'no voto' ? 'Pendiente' : voter.eleccion}
+                    </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
             </div>
-          </div>
+        )}
+        
+        {/* Footer con Paginación */}
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-700">
+                    Mostrando <span className="font-semibold">{startIndex + 1}</span> a{' '}
+                    <span className="font-semibold">{Math.min(endIndex, filteredVoters.length)}</span> de{' '}
+                    <span className="font-semibold">{filteredVoters.length}</span> votantes
+                </p>
+                <div className="flex gap-2">
+                    <button disabled={currentPage===1} onClick={() => setCurrentPage(p => p-1)} className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">Anterior</button>
+                    <span>{currentPage} / {totalPages}</span>
+                    <button disabled={currentPage===totalPages} onClick={() => setCurrentPage(p => p+1)} className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50">Siguiente</button>
+                </div>
+            </div>
         </div>
       </div>
     </div>
   );
 };
+
+// --- COMPONENTE StatCard CORREGIDO (Tailwind Friendly) ---
+const colorMap: Record<string, string> = {
+    blue: "from-blue-500 to-blue-600",
+    green: "from-green-500 to-green-600",
+    red: "from-red-500 to-red-600",
+    purple: "from-purple-500 to-purple-600",
+    yellow: "from-yellow-500 to-yellow-600",
+};
+
+interface StatCardProps {
+    title: string;
+    value: string | number;
+    color: string;
+}
+
+const StatCard = ({ color, title, value }: StatCardProps) => (
+    <div className={`bg-gradient-to-br ${colorMap[color] || 'from-gray-300 to-gray-500'} rounded-xl p-4 text-white shadow-lg`}>
+        <div className="flex items-center gap-2 mb-2">
+            <Users size={20} />
+            <span className="text-sm font-medium opacity-90">{title}</span>
+        </div>
+        <p className="text-3xl font-bold">{value}</p>
+    </div>
+);
 
 export default VotersPage;

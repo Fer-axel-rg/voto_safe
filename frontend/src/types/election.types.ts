@@ -1,6 +1,3 @@
-//Interfaces TypeScript
-// src/types/election.types.ts
-
 export interface Category {
   id: string;
   name: string;
@@ -9,21 +6,24 @@ export interface Category {
 export interface Election {
   id: string;
   name: string;
-  type: 'Presidencial' | 'Municipal' | 'Otros';
+  type: string; // General para aceptar lo que venga de la BD
   startDate: string;
   endDate: string;
-  allowNullVote: boolean;
-  requireMinimumCategory: boolean;
-  allowMultipleVotes: boolean;
-  autoSendVote: boolean;
-  categories: Category[];
   status: 'active' | 'finished' | 'upcoming';
-  createdAt: string;
+  description?: string;
+  
+  // Opcionales porque el endpoint de resumen no siempre los trae
+  allowNullVote?: boolean;
+  requireMinimumCategory?: boolean;
+  allowMultipleVotes?: boolean;
+  autoSendVote?: boolean;
+  categories?: Category[];
+  createdAt?: string;
 }
 
 export interface ElectionFilters {
   name: string;
-  type: 'Presidencial' | 'Municipal' | 'Otros'| 'all';
+  type: string;
   status: 'active' | 'finished' | 'all';
   startDate: string;
   endDate: string;

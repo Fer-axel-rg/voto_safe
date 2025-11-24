@@ -6,7 +6,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import AdminLayout from "@/components/layout/AdminLayout";
 //import UserLayout from "@/components/layout/UserLayout";
 import DashboardPage from "@/pages/admin/Dashboard/DashboardPage";
-
+import PartyDetailPage from "@/pages/admin/Parties/PartyDetailPage";
 import VotersPage from "@/pages/admin/Voters/VotersPage";
 import StatisticsPage from "@/pages/admin/Statistics/StatisticsPage";
 import ElectionsPage from "@/pages/admin/Elections/ElectionsPage";
@@ -57,6 +57,7 @@ export const routes = [
       { path: "parties", element: <PartiesPage /> },
       { path: "statistics/:id_dashbord", element: <StatisticsPage /> },
       { path: "statistics", element: <StatisticsPage /> },
+      { path: "parties/:electionId", element: <PartyDetailPage /> },
     ],
   },
   {
