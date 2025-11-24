@@ -1,19 +1,19 @@
 package com.voto_safe.voto_safe.backend.model.entity;
+
 import java.time.LocalDate;
-
 import jakarta.persistence.*;
-
-
 
 @Entity
 @Table(name = "usuarios")
 public class Usuario {
 
+    // ✅ La PK es id_usuario (según tu esquema de BD)
     @Id 
-    @Column(name = "id_usuario")
+    @Column(name = "id_usuario", nullable = false)
     private String idUsuario;
-   
-    @Column(unique = true)
+
+    // ✅ DNI es único pero no es PK
+    @Column(name = "dni", unique = true, nullable = false)
     private String dni;
 
     @Column(name = "nombres")
@@ -22,12 +22,11 @@ public class Usuario {
     @Column(name = "apellidos")
     private String apellidos;
 
-    @Column(name="fecha_nacimiento")
+    @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
 
     @Column(name = "tipo_usuario")
     private String tipoUsuario;
-
 
     private String departamento;
     private String provincia;
@@ -35,7 +34,6 @@ public class Usuario {
     private String distrito;
     private String telefono;
     private Boolean activo;
-
 
     // Getters and Setters
     public String getIdUsuario() {

@@ -1,6 +1,4 @@
 // src/pages/admin/Elections/ElectionsPage.tsx
-// src/pages/admin/Elections/ElectionsPage.tsx
-
 import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { useElections } from "@/hooks/useElections";
@@ -11,10 +9,18 @@ import AddElectionModal from "@/components/elections/AddElectionModal";
 import EditElectionModal from "@/components/elections/EditElectionModal";
 
 export default function ElectionsPage() {
-  const { elections, filters, addElection, updateElection, deleteElection, updateFilters } =
-    useElections();
+  const { 
+    elections, 
+    filters, 
+    loading,
+    error,
+    addElection, 
+    updateElection, 
+    deleteElection, 
+    updateFilters 
+  } = useElections();
 
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false); // ✅ Oculto por defecto
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedElection, setSelectedElection] = useState<Election | null>(null);
@@ -26,11 +32,15 @@ export default function ElectionsPage() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (electionToDelete) {
-      deleteElection(electionToDelete);
-      setShowDeleteConfirm(false);
-      setElectionToDelete(null);
+      try {
+        await deleteElection(electionToDelete);
+        setShowDeleteConfirm(false);
+        setElectionToDelete(null);
+      } catch (err) {
+        console.error('Error al eliminar:', err);
+      }
     }
   };
 
@@ -39,11 +49,48 @@ export default function ElectionsPage() {
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = (id: string, election: Election) => {
-    updateElection(id, election);
-    setShowEditModal(false);
-    setSelectedElection(null);
+  const handleSaveEdit = async (id: string, election: Election) => {
+    try {
+      await updateElection(id, election);
+      setShowEditModal(false);
+      setSelectedElection(null);
+    } catch (err) {
+      console.error('Error al actualizar:', err);
+    }
   };
+
+  const handleAddElection = async (election: Omit<Election, 'id' | 'createdAt'>) => {
+    try {
+      await addElection(election);
+      setShowAddModal(false);
+    } catch (err) {
+      console.error('Error al agregar:', err);
+    }
+  };
+
+  // Loading state
+  if (loading && elections.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+          <p className="text-gray-600">Cargando elecciones...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <p className="text-red-800 font-semibold mb-2">Error al cargar elecciones</p>
+          <p className="text-red-600 text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -66,8 +113,13 @@ export default function ElectionsPage() {
         <div className="flex-1 space-y-4">
           {elections.length === 0 ? (
             <div className="bg-[#eaf2fc] rounded-[30px] p-12 shadow-[0_4px_12px_rgba(182,187,211,0.3)] text-center">
-              <p className="text-gray-500 text-lg">
-                No hay elecciones registradas. ¡Agrega una nueva!
+              <p className="text-gray-500 text-lg mb-4">
+                No hay elecciones registradas.
+              </p>
+              <p className="text-gray-400 text-sm">
+                {filters.name || filters.type !== 'all' || filters.status !== 'all'
+                  ? 'Intenta ajustar los filtros o agrega una nueva elección.'
+                  : '¡Agrega una nueva elección para comenzar!'}
               </p>
             </div>
           ) : (
@@ -86,13 +138,16 @@ export default function ElectionsPage() {
             onClick={() => setShowAddModal(true)}
             className="w-full bg-green-500 text-white py-4 rounded-[30px] font-semibold text-lg hover:bg-green-600 transition-colors shadow-[0_4px_12px_rgba(182,187,211,0.3)]"
           >
-            + AGREGAR
+            + AGREGAR ELECCIÓN
           </button>
         </div>
 
         {/* Panel de Filtros */}
         {showFilters && (
-          <ElectionFilters filters={filters} onFilterChange={updateFilters} />
+          <ElectionFilters 
+            filters={filters} 
+            onFilterChange={updateFilters} 
+          />
         )}
       </div>
 
@@ -100,7 +155,7 @@ export default function ElectionsPage() {
       <AddElectionModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSave={addElection}
+        onSave={handleAddElection}
       />
 
       {/* Modal Editar */}

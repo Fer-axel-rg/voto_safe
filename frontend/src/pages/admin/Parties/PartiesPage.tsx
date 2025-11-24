@@ -1,6 +1,6 @@
 // src/pages/admin/Parties/PartiesPage.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SlidersHorizontal } from "lucide-react";
 import { useActiveElections } from "@/hooks/useActiveElections";
@@ -9,9 +9,29 @@ import ElectionFiltersForParties from "../../../components/parties/ElectionFilte
 
 export default function PartiesPage() {
   const navigate = useNavigate();
-  const { elections, loading } = useActiveElections();
+  
+  // ✅ SOLUCIÓN: Pasar false para que NO se ejecute automáticamente
+  const { elections, loading, loadActiveElections } = useActiveElections(false);
+  
   const [showFilters, setShowFilters] = useState(false);
-  const [filteredElections, setFilteredElections] = useState(elections);
+  const [filteredElections, setFilteredElections] = useState<typeof elections>([]);
+
+  // ✅ Cargar elecciones SOLO cuando el componente se monta (una sola vez)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log("PartiesPage: Montado - Cargando elecciones");
+    }
+    loadActiveElections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ← Array vacío: solo se ejecuta al montar
+
+  // ✅ Actualizar filteredElections cuando elections cambie
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log("PartiesPage: Elecciones actualizadas", elections.length);
+    }
+    setFilteredElections(elections);
+  }, [elections]); // ← Solo cuando elections cambie
 
   // Aplicar filtros
   const handleFilter = (filters: { name: string; type: string; status: string }) => {
@@ -50,6 +70,8 @@ export default function PartiesPage() {
     );
   }
 
+  const displayElections = filteredElections.length > 0 ? filteredElections : elections;
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
@@ -76,7 +98,7 @@ export default function PartiesPage() {
       <div className="flex gap-6">
         {/* Lista de Elecciones */}
         <div className="flex-1 space-y-4">
-          {(filteredElections.length > 0 ? filteredElections : elections).length === 0 ? (
+          {displayElections.length === 0 ? (
             <div className="bg-[#eaf2fc] rounded-[30px] p-12 shadow-[0_4px_12px_rgba(182,187,211,0.3)] text-center">
               <p className="text-gray-500 text-lg">
                 No hay elecciones activas o por comenzar.
@@ -86,7 +108,7 @@ export default function PartiesPage() {
               </p>
             </div>
           ) : (
-            (filteredElections.length > 0 ? filteredElections : elections).map((election) => (
+            displayElections.map((election) => (
               <ElectionCardForParties
                 key={election.id}
                 election={election}
